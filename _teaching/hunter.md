@@ -1,10 +1,10 @@
 ---
 title: "High School Teaching Experience"
 collection: teaching
-type: "High School Course"
+type: "Computer Science 9"
 permalink: /teaching/high-school
 venue: "Hunter College High School"
-date: 2022-09-01
+date: 2022-2023
 location: "New York, NY"
 ---
 
