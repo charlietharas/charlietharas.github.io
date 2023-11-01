@@ -4,7 +4,7 @@ collection: teaching
 type: "Computer Science 9"
 permalink: /teaching/high-school
 venue: "Hunter College High School"
-date: 2022-2023
+date: 2022-09-01
 location: "New York, NY"
 ---
 
