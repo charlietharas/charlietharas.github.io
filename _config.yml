@@ -11,7 +11,7 @@ title                    : "Charlie Tharas"
 title_separator          : "-"
 name                     : &name "Charlie Max Tharas"
 description              : &description "Welcome!"
-url                      : https://charlietharas.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
+url                      : "https://charlietharas.github.io" # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
 repository               : "charlietharas/charlietharas.github.io"
 teaser                   :  # filename of teaser fallback teaser image placed in /images/, .e.g. "500x300.png"
@@ -29,10 +29,10 @@ comments:
   facebook:
     appid                :
     num_posts            : # 5 (default)
-    colorscheme          : # "light" (default), "dark"
+    colorscheme          : # "dark" (default), "dark"
 staticman:
   allowedFields          : ['name', 'email', 'url', 'message']
-  branch                 : "gh-pages" # "master", "gh-pages"
+  branch                 : "master" # "master", "gh-pages"
   commitMessage          : "New comment."
   filename               : comment-{@timestamp}
   format                 : "yml"
@@ -73,7 +73,7 @@ social:
 
 # Analytics
 analytics:
-  provider               :  "google-universal" # false (default), "google", "google-universal", "custom"
+  provider               :  false # false (default), "google", "google-universal", "custom"
   google:
     tracking_id          :
 
@@ -83,7 +83,7 @@ author:
   name             : "Charlie Tharas"
   avatar           : "profile.png"
   bio              : "Williams College class of 2027"
-  location         : "NYC && Williamstown"
+  location         : "NYC and Williamstown, MA"
   employer         :
   pubmed           :
   googlescholar    :
