@@ -1,4 +1,5 @@
 ---
+layout: archive
 permalink: /resume/
 title: "Resume"
 excerpt: "About me"
