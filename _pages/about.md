@@ -50,4 +50,4 @@ Here's a brief overview of the coolest stuff I've done. For a less brief overvie
 ## Projects
 I love to analyze random data from my life (fitness, sleep, music history). I love to build machine learning models and play around with their applications (NLP chatbots, CV webcam models). I like to make games here and there (Unity, Java graphics). Not all of my work is public, since a lot is deeply tangled in my personal data with absolutely no privacy best practices involved, but I'm working on that!
 
-For the sake of not having to keep these updated, just check out my [projects](https://charliemax.dev/projects).
+For the sake of not having to keep these updated, just check out my [projects](https://charliemax.dev/portfolio).
