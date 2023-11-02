@@ -1,6 +1,6 @@
 ---
 title: "Face Generation Playground"
-excerpt: "TensorFlow DCGAN Face Generator Model"
+excerpt: "TensorFlow DCGAN Face Generator Model."
 collection: ml
 ---
 

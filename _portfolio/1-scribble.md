@@ -1,6 +1,6 @@
 ---
 title: "Scribble"
-excerpt: "Aerial handwriting parser"
+excerpt: "Aerial handwriting parser."
 collection: ml
 ---
 

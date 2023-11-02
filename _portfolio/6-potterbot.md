@@ -1,6 +1,6 @@
 ---
 title: "NLP Text Generator"
-excerpt: "TensorFlow/Keras NLP model for text generation"
+excerpt: "TensorFlow/Keras NLP model for text generation."
 collection: ml
 ---
 

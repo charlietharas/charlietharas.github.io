@@ -1,6 +1,6 @@
 ---
 title: "YouTube Music Wrapped Playground"
-excerpt: "Will have more to see here soon!"
+excerpt: "Series of data analysis and visualization functions for music history data."
 collection: ml
 ---
 
