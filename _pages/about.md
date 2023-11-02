@@ -32,12 +32,14 @@ Imagine a liberal arts college, but as a high school. I did a lot of stuff, here
 
 Check out awards and competitions on my [LinkedIn](https://linkedin.com/in/charlietharas).
 
+\
+\
 Experiences
 =====
-Here's a brief overview of the coolest stuff I've done. For a less brief overview, check out my [resume](https://charliemax.dev/resume), the list of [projects](https://charliemax.dev/projects) I've been working on, and my [experiences as a teaching assistant](https://charliemax.dev/teaching).
+Here's a brief overview of some of the coolest stuff I've done. For a less brief overview, check out my [resume](https://charliemax.dev/resume.pdf), the list of [projects](https://charliemax.dev/projects) I've been working on, and my [experiences as a teaching assistant](https://charliemax.dev/teaching).
 ## Work
 - Data engineering & bioinformatics intern for [MSKCC MIND](https://www.mskcc.org/research-programs/msk-mind-multi-modal-integration-data) in the summer of 2022. I debugged and documented their Luna platform on Unix machines, built models to identify cell features on slide data, and worked on a .svs viewer and annotator that could integrate into their model training pipeline.
-- I also spend my summers working as a surf instructor at Rockaway Beach. :ocean:
+- I also spend my summers working as a surf instructor at Rockaway Beach 🌊.
 
 ## Volunteer
 - I was on the national executive board of [Steel City Codes](https://steelcitycodes.org), a chapter-based nonprofit that provides computer science education to ~2000 students from underserved communities ever year. Starting as a tutor in 2020, I became a chapter head in 2021, where I reached out to NYC school administrators to launch chapters at dozens of schools. In 2022 and 2023, I worked with the national executive team to organize several [hackathons](https://devpost.com/hackathons?search=steel%20city%20hacks) (total 500+ participants, $25K+ cash-value fundraised), partner with [MRI Software](https://www.mrisoftware.com/) to bring SCC workshops to their company HQ in Cleveland, launch new after-school and summer camp offerings, and build several new curriculum offerings.
