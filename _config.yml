@@ -7,7 +7,7 @@
 
 # Site Settings
 locale                   : "en-US"
-title                    : "About"
+title                    : "Charlie Max Tharas"
 title_separator          : "-"
 name                     : &name "Charlie Max Tharas"
 description              : &description "Welcome to my personal site"
@@ -82,7 +82,7 @@ analytics:
 author:
   name             : "Charlie Tharas"
   avatar           : "profile.png"
-  bio              : "Williams College '2027"
+  bio              : "Williams College"
   location         : "NYC && Williamstown, MA"
   employer         :
   pubmed           :
