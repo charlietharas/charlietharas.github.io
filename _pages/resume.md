@@ -6,4 +6,6 @@ excerpt: "About me"
 author_profile: true
 ---
 
-Bear with me while I migrate over my resume!
+Download the latest .pdf version [here](https://charliemax.dev/files/resume.pdf).
+
+This is just a temporary page while I finish setting up the site.
