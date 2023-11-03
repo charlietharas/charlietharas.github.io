@@ -31,7 +31,7 @@ Imagine a liberal arts college, but as a high school. I did a lot of stuff, here
 
 Check out awards and competitions on my [LinkedIn](https://linkedin.com/in/charlietharas).
 
-\
+  
 
 # Experiences
 Here's a brief overview of some of the coolest stuff I've done. For a less brief overview, check out my [resume](https://charliemax.dev/resume.pdf), the list of [projects](https://charliemax.dev/projects) I've been working on, and my [experiences as a teaching assistant](https://charliemax.dev/teaching).
