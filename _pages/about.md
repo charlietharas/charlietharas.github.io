@@ -10,8 +10,7 @@ redirect_from:
 
 Hi! I hope you're having a good day. This is my website, which has some information about me and my life. Check it out:
 
-Education
-=====
+# Education
 TL;DR: I'm graduating with my bachelor's degree in CS + Math in 2027.
 ## Undergrad
 **Williams College**, Williamstown, MA, 2023-2027 (Bachelor of Arts)
@@ -33,9 +32,8 @@ Imagine a liberal arts college, but as a high school. I did a lot of stuff, here
 Check out awards and competitions on my [LinkedIn](https://linkedin.com/in/charlietharas).
 
 \
-\
-Experiences
-=====
+
+# Experiences
 Here's a brief overview of some of the coolest stuff I've done. For a less brief overview, check out my [resume](https://charliemax.dev/resume.pdf), the list of [projects](https://charliemax.dev/projects) I've been working on, and my [experiences as a teaching assistant](https://charliemax.dev/teaching).
 ## Work
 - Data engineering & bioinformatics intern for [MSKCC MIND](https://www.mskcc.org/research-programs/msk-mind-multi-modal-integration-data) in the summer of 2022. I debugged and documented their Luna platform on Unix machines, built models to identify cell features on slide data, and worked on a .svs viewer and annotator that could integrate into their model training pipeline.
