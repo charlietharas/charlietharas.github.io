@@ -20,4 +20,4 @@ Basic simulation of citizen agents in and around a model of New York City's subw
 
 [See Repo Here.](https://github.com/charlietharas/citysimulator)
 
-![Animated GIF of running simulation](https://charliemax.dev/images/citysim2.gif)
+![Animated GIF of running simulation](citysim2.gif)
