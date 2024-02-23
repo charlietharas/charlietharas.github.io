@@ -11,7 +11,7 @@ redirect_from:
 Hi! I hope you're having a good day. This is my website, which has some information about me and my life. Check it out:
 
 # Education
-TL;DR: I'm graduating with my bachelor's degree in CS + Math in 2027.
+TL;DR: I'm graduating with my bachelor's degree in CS + Math in 2027. I'm also expecting to concentrate in Cognitive Science.
 ## Undergrad
 **Williams College**, Williamstown, MA, 2023-2027 (Bachelor of Arts)
 
