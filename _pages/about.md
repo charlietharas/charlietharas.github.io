@@ -15,7 +15,7 @@ TL;DR: I'm graduating with my bachelor's degree in CS + Math in 2027.
 ## Undergrad
 **Williams College**, Williamstown, MA, 2023-2027 (Bachelor of Arts)
 
-Anticipated double major in Computer Science and Mathematics, with a concentration in Cognitive Science. l'm currently participating in student computer science and reseach organizations, and I'm looking to conduct research at Williams on natural language processing. Things are still ramping up, so stay tuned!
+Anticipated double major in Computer Science and Mathematics, with a concentration in Cognitive Science. I'm currently participating in student computer science and research organizations, and I'm looking to conduct research at Williams on natural language processing. I'm also very actively involved with the climbing team: I teach bouldering PE classes, host climbing facility open hours, and compete regionally in bouldering. Things are still ramping up, so stay tuned!
 
 ## High School
 
