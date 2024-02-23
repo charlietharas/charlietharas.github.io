@@ -36,6 +36,7 @@ Check out awards and competitions on my [LinkedIn](https://linkedin.com/in/charl
 # Experiences
 Here's a brief overview of some of the coolest stuff I've done. For a less brief overview, check out my [resume](https://charliemax.dev/resume.pdf), the list of [projects](https://charliemax.dev/projects) I've been working on, and my [experiences as a teaching assistant](https://charliemax.dev/teaching).
 ## Work
+- Student developer for [Williams Students Online](https://wso.williams.edu/about) starting in my freshman year of college. Worked on front and back end (primarily with Go & React.js) to develop features for our student website, such as course schedule synchronization with user accounts and Williams's course rating service, new feature flags for the course catalog, and good old bug fixes.
 - Data engineering & bioinformatics intern for [MSKCC MIND](https://www.mskcc.org/research-programs/msk-mind-multi-modal-integration-data) in the summer of 2022. I debugged and documented their Luna platform on Unix machines, built models to identify cell features on slide data, and worked on a .svs viewer and annotator that could integrate into their model training pipeline.
 - I also spend my summers working as a surf instructor at Rockaway Beach 🌊.
 
