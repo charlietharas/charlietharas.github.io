@@ -14,5 +14,4 @@ redirect_from:
 ![Leiachen](/images/leia.jpg)
 
 ## Both
-Yes he is big
 ![Two of them](/images/both.jpg)
