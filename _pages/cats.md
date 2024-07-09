@@ -4,7 +4,7 @@ title: "Cats"
 excerpt: "Luke & Leia"
 author_profile: false
 redirect_from: 
-  - /cats/
+  - /cat/
 ---
 
 ## Luke
