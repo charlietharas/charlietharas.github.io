@@ -8,4 +8,4 @@ date: 2024-09-01
 location: "Williamstown, MA"
 ---
 
-Will be updated when I start :)
+TBD
