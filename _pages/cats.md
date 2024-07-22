@@ -15,6 +15,7 @@ redirect_from:
 
 ## Both
 ![Two of them](/images/both.jpg)
+
 ![Two of them](/images/both2.jpg)
 
 ## Sleepy
