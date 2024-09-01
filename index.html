@@ -4,87 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
-    <title>coming soon™</title>
-    <style>
-        header {
-            padding: 20;
-            align-items: center;
-            justify-content:center;
-            top: 20px;
-            width: 100%;
-            text-align:center;
-        }
-        .light-mode header, 
-        .light-mode .content,
-        .light-mode a,
-        .light-mode a:hover,
-        .light-mode {
-            background-color:rgb(240, 220, 200);
-            color:black;
-        }
-        body {
-            background-color: black;
-            color: white;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-        }
-        .content {
-            border: 3px solid rgb(15, 90, 15);
-            border-radius: 10px;
-            border-style:ridge;
-            width:50%;
-            text-align: left;
-            padding-left: 20px;
-            padding-right: 20px;
-        }
-        h1.centered {
-            text-align:center;
-        }
-        a {
-            color: white;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        h2 {
-            font-size:1.75em;
-        }
-        p {
-            font-size:1.35em;
-        }
-    </style>
+    <link rel="stylesheet" href="css/stylesheet.css">
+    <title>charlie max tharas</title>
 </head>
 <header>
     <h1>
+        <a href="files/resume.pdf" target="_blank">resume</a> | 
         <a href="index.html">home</a> | 
-        <a href="teaching.html">teaching</a> | 
+        <a href="pages/teaching.html">teaching</a> | 
         <a href="pages/projects.html">projects</a> | 
-        <a href="#" id="mode-toggle">light</a>
+        <a href="pages/blog.html">blog</a> | 
+        <a class="light-mode-button" href="#" id="mode-toggle">light☀️</a>
     </h1>
-    <script>
-        const modeToggle = document.getElementById('mode-toggle');
-        const body = document.body;
-
-        modeToggle.addEventListener('click', () => {
-            body.classList.toggle('light-mode');
-
-            if (body.classList.contains('light-mode')) {
-                modeToggle.textContent = 'dark';
-            } else {
-                modeToggle.textContent = 'light';
-            }
-        });
-    </script>
+    <script src="js/lightmode.js"></script>
 </header>
 <body>
     <div class="content">
-        <h1 class="centered">Charlie Max Tharas</h1>
-		<h2>About me</h2>
+        <h1 style="text-align:center">Charlie Max Tharas</h1>
+        <p>Hi! I hope you're having a good day. This is my website, which has some information about me and my life. Check it out:</p>
+		<h2>Education</h2>
+        <p>
+            TL;DR: I'll graduate with a BA in Computer Science & Mathematics from <a href="https://williams.edu" target="_blank">Williams College</a> in 2027.<span class="info-button" id="degree-button"><sup>ⓘ</sup><span class="tooltip" id ="degree-tooltip"></span></span> And I'm definitely a liberal arts kid.
+        </p>
+        <p class="toggle-button">Academic interests 🖱</p>
+        <ul class="toggle-list">
+            <li><b>Comp sci:</b> I don't know yet if I'll spend my life working on <a href="https://chatbots.org/chatbot/joan1" target="_blank">high-level abstractions of thought</a> or optimizing specialized algorithms closer to the hardware. Both sides of the spectrum seem equally important and fascinating, so for now, I'm just exploring and letting every discipline I encounter guide my thinking. Except web dev.<span class="info-button" id="webdev-button"><sup>ⓘ</sup><span class="tooltip" id ="webdev-tooltip"></span></span></li>
+            <li><b>Math:</b> Pragmatically helpful all over comp sci, but I'm more interested in <a href="https://www.youtube.com/watch?v=MBnnXbOM5S4" target="_blank">why and how all these little things about the universe line up</a>. "Planning" my CS/Math undergrad thesis around Fourier transforms.</li>
+            <li><b>Cog sci:</b> How can we build thinking machines (and what is thinking, and a machine)? Can we do this safely and ethically?</li>
+            <li><b>Philosophy:</b> Should we build thinking machines (and what is thinking, and a machine, and we)? Is computer science intrinsically doomed to make life less fulfilling and meaningful? Can we make it otherwise?</li>
+            <li><b>Linguistics:</b> How do we communicate? How can we communicate better? Can we make machines that help? What is a language, and how do each of its features affect its failure to capture reality?</li>
+            <li><b>Misc:</b> Urbanism, social geography, politics, economics, geoscience. What are pragmatic and easy ways to help people live better? How will the world need to adapt in the face of <a href="https://www.theatlantic.com/science/archive/2024/08/extreme-heat-pakistan-lahore/679433/" target="_blank">climate change</a>, and how can we get a head start?</li>
+        </ul>
+        <h2>Experience</h2>
+        <p>You might want to check out my <a href="files/resume.pdf" target="_blank">resume</a>, but here's a quick overview:</p>
+        <ul>
+            <li><b>Transportation researcher</b> for <a class="blue" href="https://learning-in-action.williams.edu/" target="_blank">Williams Center for Learning in Action</a>: working with a TDM<span class="info-button" id="tdmc-button"><sup>ⓘ</sup><span class="tooltip" id ="tdmc-tooltip"></span></span> coordinator to design carpool web app, built out a backend using Go and GORM, researching mobility patterns in the Berkshires.</li>
+            <li><b>Student developer</b> for <a class="blue" href="https://wso.williams.edu/about" target="_blank">Williams Students Online</a>: developing useful features on student-led website like synchronizing our course scheduler with professor ratings and enabling easier searches for interesting classes.</li>
+            <li><b>Research intern</b> for <a class="blue" href="https://www.mskcc.org/research-programs/msk-mind-multi-modal-integration-data" target="_blank">MSKCC MIND</a>: high school summer internship, worked on CV models to identify cell features, collaborated with data engineers to streamline the training pipeline for non-tech-savvy pathologists.</li>
+            <li><b>COO (and various other roles)</b> at <a class="blue" href="https://steelcitycodes.org" target="_blank">Steel City Codes</a>: managed operations for a large<span class="info-button" id="scc-button"><sup>ⓘ</sup><span class="tooltip" id ="scc-tooltip"></span></span> nonprofit: conducted outreach, hired and onboarded administrative staff, organized sponsored events, raised money, planned hackathons, designed curricula. Started as a tutor in 2020 and worked my way up.</li>
+        </ul>
+        <h2>Interests</h2>
+        <p><b>This section under construction</b></p>
     </div>
+    <div class="content">
+        <h1>Featured project: citysim</h1>
+        <p><b>This section under construction</b></p>
+    </div>
+    <div class="content">
+        <h1>Featured animals: my cats</h1>
+        <p><b>This section under construction</b></p>
+    </div>
+    <script src="js/tooltip.js"></script>
+    <script>
+        addListener('degree-button', 'degree-tooltip', '<p class="tooltip-text">With a planned concentration in cognitive science and undergraduate thesis.</p>');
+        addListener('webdev-button', 'webdev-tooltip', '<img src="images/warcat.jpeg" alt="War stricken feline.">');
+        addListener('tdmc-button', 'tdmc-tooltip', '<p class="tooltip-text">Transportation demand management: responsible for creating effective transportation solutions for contracted institutions.</p>');
+        addListener('scc-button', 'scc-tooltip', '<p class="tooltip-text">2000+ students & ~400 volunteers/year across a couple dozen major and minor chapters across America.</p>')
+    </script>
+    <script>
+        const toggleButton = document.querySelector('.toggle-button');
+        const toggleList = document.querySelector('.toggle-list');
+        toggleButton.addEventListener('click', () => { toggleList.classList.toggle('show'); });
+    </script>
 </body>
 </html>
