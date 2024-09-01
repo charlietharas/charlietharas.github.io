@@ -3,20 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
     <title>coming soon™</title>
     <style>
+        header {
+            padding: 20;
+            align-items: center;
+            justify-content:center;
+            top: 20px;
+            width: 100%;
+            text-align:center;
+        }
+        .light-mode header, 
+        .light-mode .content,
+        .light-mode a,
+        .light-mode a:hover,
+        .light-mode {
+            background-color:rgb(240, 220, 200);
+            color:black;
+        }
         body {
             background-color: black;
             color: white;
             font-family: Arial, sans-serif;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
             margin: 0;
         }
         .content {
-            text-align: center;
+            border: 3px solid rgb(15, 90, 15);
+            border-radius: 10px;
+            border-style:ridge;
+            width:50%;
+            text-align: left;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+        h1.centered {
+            text-align:center;
         }
         a {
             color: white;
@@ -25,14 +51,40 @@
         a:hover {
             text-decoration: underline;
         }
+        h2 {
+            font-size:1.75em;
+        }
+        p {
+            font-size:1.35em;
+        }
     </style>
 </head>
+<header>
+    <h1>
+        <a href="index.html">home</a> | 
+        <a href="teaching.html">teaching</a> | 
+        <a href="pages/projects.html">projects</a> | 
+        <a href="#" id="mode-toggle">light</a>
+    </h1>
+    <script>
+        const modeToggle = document.getElementById('mode-toggle');
+        const body = document.body;
+
+        modeToggle.addEventListener('click', () => {
+            body.classList.toggle('light-mode');
+
+            if (body.classList.contains('light-mode')) {
+                modeToggle.textContent = 'dark';
+            } else {
+                modeToggle.textContent = 'light';
+            }
+        });
+    </script>
+</header>
 <body>
     <div class="content">
-        <h1>working on a new website</h1>
-		<h3>coming soon™</h3>
-        <p><a href="https://www.linkedin.com/in/charlietharas" target="_blank">linkedin</a></p>
-        <p><a href="files/resume.pdf" target="_blank">resume</a></p>
+        <h1 class="centered">Charlie Max Tharas</h1>
+		<h2>About me</h2>
     </div>
 </body>
 </html>
