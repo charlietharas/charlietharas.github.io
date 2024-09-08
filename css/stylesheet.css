@@ -1,0 +1,127 @@
+:root {
+    --sage: rgb(15, 90, 15);
+    --blue: rgb(20, 60, 180);
+    --offwhite: rgb(240, 220, 200);
+    --offoffwhite: rgb(220, 200, 180);
+    --offblack: rgb(20, 20, 20);
+    --gold: rgb(190, 165, 60);
+    --purple: rgb(95, 0, 160);
+}
+nav {
+    font-size:1.25em;
+    padding: 20;
+    align-items: center;
+    justify-content:center;
+    top: 20px;
+    width: 100%;
+    text-align:center;
+}
+body {
+    background-color: black;
+    color: white;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+}
+.content {
+    border: 3px solid var(--purple);
+    border-radius: 10px;
+    border-style:ridge;
+    width:50%;
+    text-align: left;
+    padding-left: 20px;
+    padding-right: 20px;
+    margin-bottom: 30px;
+}
+p {
+    font-size: 1.35em;
+}
+li {
+    font-size: 1.35em;
+}
+h2 {
+    font-size: 1.75em;
+}
+a {
+    color: white;
+    text-decoration: none;
+}
+a.blue {
+    color: dodgerblue;
+    text-decoration:none;
+}
+a:hover {
+    text-decoration: underline;
+}
+a.blue:hover {
+    text-decoration:underline;
+}
+a:hover.light-mode-button {
+    color: rgb(190, 190, 190);
+}
+.light-mode a:hover.light-mode-button {
+    color: rgb(65, 65, 65);
+}
+.light-mode header, 
+.light-mode a,
+.light-mode a:hover,
+.light-mode {
+    background-color: var(--offwhite);
+    color:black;
+}
+.light-mode .content {
+    background-color: var(--offwhite);
+    color:black;
+    border: 3px solid var(--sage);
+}
+.light-mode .tooltip {
+    background-color: var(--offoffwhite);
+}
+.light-mode a.blue {
+    color: var(--sage);
+}
+.info-button {
+    cursor: pointer;
+    position: relative;
+    font-size:0.9em;
+}
+.info-button:hover {
+    cursor:grab;
+}
+.tooltip-text {
+    font-size:0.85em;
+    margin-top:0px;
+    margin-bottom:0px;
+}
+.tooltip {
+    display:none;
+    position: absolute;
+    bottom: 20px;
+    left: 10px;
+    height:min-content;
+    background-color: var(--offblack);
+    border: 1px solid var(--gold);
+    border-radius: 5px;
+    z-index: 1000;
+    flex-grow:1;
+    width:max-content;
+    max-width: 350px;
+    padding:10px;
+    flex-direction:column;
+}
+.toggle-button {
+    margin-bottom:0px;
+}
+.toggle-button:hover {
+    cursor:grab;
+    text-decoration:underline;
+}
+.toggle-list {
+    display: none;
+}
+.toggle-list.show {
+    display: block;
+}
