@@ -1,8 +1,9 @@
 :root {
     --sage: rgb(15, 90, 15);
+    --blue: rgb(20, 60, 180);
     --offwhite: rgb(240, 220, 200);
     --offoffwhite: rgb(220, 200, 180);
-    --offblack: rgb(15, 15, 15);
+    --offblack: rgb(20, 20, 20);
 }
 header {
     padding: 20;
@@ -23,7 +24,7 @@ body {
     margin: 0;
 }
 .content {
-    border: 3px solid var(--sage);
+    border: 3px solid var(--blue);
     border-radius: 10px;
     border-style:ridge;
     width:50%;
@@ -53,7 +54,6 @@ a:hover {
     text-decoration: underline;
 }
 a.blue:hover {
-    color: inherit;
     text-decoration:underline;
 }
 a:hover.light-mode-button {
@@ -63,15 +63,20 @@ a:hover.light-mode-button {
     color: rgb(65, 65, 65);
 }
 .light-mode header, 
-.light-mode .content,
 .light-mode a,
 .light-mode a:hover,
 .light-mode {
     background-color: var(--offwhite);
     color:black;
 }
+.light-mode .content {
+    background-color: var(--offwhite);
+    color:black;
+    border: 3px solid var(--sage);
+}
 .light-mode .tooltip {
     background-color: var(--offoffwhite);
+    border: 1px solid var(--blue);
 }
 .light-mode a.blue {
     color: var(--sage);
@@ -84,7 +89,7 @@ a:hover.light-mode-button {
 .info-button:hover {
     cursor:grab;
 }
-p.tooltip-text {
+.tooltip-text {
     font-size:0.85em;
     margin-top:0px;
     margin-bottom:0px;
@@ -103,6 +108,7 @@ p.tooltip-text {
     width:max-content;
     max-width: 350px;
     padding:10px;
+    flex-direction:column;
 }
 .toggle-button {
     margin-bottom:0px;
