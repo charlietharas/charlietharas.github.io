@@ -22,18 +22,14 @@ function getCookie(name) {
 const modeToggle = document.getElementById('mode-toggle');
 const body = document.body;
 
-// default to light mode
-body.classList.add('light-mode');
-modeToggle.textContent = 'dark🌑';
-
 document.addEventListener('DOMContentLoaded', () => {
     const mode = getCookie('mode');
-    if (mode === 'light') {
-        body.classList.add('light-mode');
-        modeToggle.textContent = 'dark🌑';
-    } else {
+    if (mode === 'dark') {
         body.classList.remove('light-mode');
         modeToggle.textContent = 'light☀️';
+    } else {
+        body.classList.add('light-mode');
+        modeToggle.textContent = 'dark🌑';
     }
 });
 
@@ -42,9 +38,9 @@ modeToggle.addEventListener('click', () => {
 
     if (body.classList.contains('light-mode')) {
         modeToggle.textContent = 'dark🌑';
-        setCookie('mode', 'light', 7); // Store 'light' mode for 7 days
+        setCookie('mode', 'light', 7);
     } else {
         modeToggle.textContent = 'light☀️';
-        setCookie('mode', 'dark', 7); // Store 'dark' mode for 7 days
+        setCookie('mode', 'dark', 7);
     }
 });
