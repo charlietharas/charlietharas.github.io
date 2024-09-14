@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seamless Vertical Scrolling Columns</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: rgb(80, 0, 130);
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 80%;
+            color:rgb(248, 248, 248);
+            margin: 0 auto;
+        }
+
+        .column {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .scroll {
+            position: absolute;
+            width: 100%;
+            height: auto;
+            white-space: nowrap;
+        }
+
+        .scroll span {
+            font-size: 36px;
+            line-height: 48px;
+            text-align: center;
+            white-space: nowrap;
+            display: block;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="column" id="column1"></div>
+        <div class="column" id="column2"></div>
+        <div class="column" id="column3"></div>
+    </div>
+    <script>
+        async function readJSON() {
+            const response = await fetch('files/wso-words.json');
+            if (!response.ok) {
+                throw new Error('Failed to fetch wso-words.json: ' + response.statusText);
+            }
+            const data = await response.json();
+            return data;
+        }
+
+        var pauses = [false, false, false];
+        function createScrollingContent(containerID, scrollSpeed, words, specialWord, index) {
+            const CONTENT_AMT = 22; // hardcoded value, sorry :(
+            const container = document.getElementById(containerID);
+            const scrollDiv = document.createElement('div');
+            scrollDiv.classList.add('scroll');
+
+            function generateContent(num) {
+                let arr = []
+                arr.push('<div>');
+                for (let i = 0; i < num; i++) {
+                    arr.push(`<span>${words[Math.floor(Math.random() * words.length)].toLowerCase()}</span>`);
+                }
+                arr.push('</div>');
+                arr[num/2] = '<span style="font-family:\'Georgia\', serif;padding:5px;color:rgb(80, 0, 130);background-color:rgb(255, 190, 10);font-size:450%;">' + specialWord + '</span>';
+                if (index == 1) {
+                    arr[num/2+1] = '<span style="font-family:\'Georgia\', serif;padding:5px;font-size:250%;"><u>' + 'wso.williams.edu' + '</u></span>';
+                    arr[num/2+2] = '<span style="color:rgb(80, 0, 130);">a</span>';
+                }
+                return arr.join('');
+            }
+
+            const initialContent = generateContent(CONTENT_AMT) + generateContent(CONTENT_AMT);
+            scrollDiv.innerHTML = initialContent;
+            container.appendChild(scrollDiv);
+
+            let scrollHeight = scrollDiv.scrollHeight / 2;
+            let offset = 0;
+
+            function animateScroll() {
+                if (!pauses[index]) {
+                    offset += Math.abs(scrollSpeed);
+                    if (offset >= scrollHeight) {
+                        scrollDiv.innerHTML = scrollDiv.innerHTML.replace(/^(<div>.*?<\/div>)/, '');
+                        scrollDiv.innerHTML += generateContent(CONTENT_AMT);
+                        offset = 0;
+                    }
+
+                    if (scrollHeight - offset <= scrollSpeed) {
+                        offset = scrollHeight;
+                        pauses[index] = true;
+                    }
+
+                    scrollDiv.style.top = `${-offset}px`;
+
+                    requestAnimationFrame(animateScroll);
+                } else {
+                    if (pauses[0] && pauses[1] && pauses[2]) {
+                        setTimeout(() => {
+                            console.log("unpaused");
+                            pauses[index] = false;
+                        }, Math.floor(Math.random() * 1000 + 1000));
+                    }
+                    requestAnimationFrame(animateScroll);
+                }
+            }
+
+            animateScroll();
+        }
+
+        document.addEventListener('DOMContentLoaded', async (event) => {
+            words_data = await readJSON();
+
+            createScrollingContent('column1', 5, words_data.w, 'WILLIAMS', 0);
+            createScrollingContent('column2', 4, words_data.s, 'STUDENTS', 1);
+            createScrollingContent('column3', 3, words_data.o, 'ONLINE', 2);
+        });
+    </script>
+</body>
+</html>
