@@ -64,7 +64,7 @@
         var pauses = [false, false, false];
         var doPauses = [false, false, false];
         function createScrollingContent(containerID, scrollSpeed, words, specialWord, index) {
-            const CONTENT_AMT = Math.ceil(window.innerHeight / 48) - 1; // harcoded for display, may stil have funny fullscreen behavior
+            const CONTENT_AMT = 22; // harcoded for display, may stil have funny fullscreen behavior
             const container = document.getElementById(containerID);
             const scrollDiv = document.createElement('div');
             scrollDiv.classList.add('scroll');
@@ -78,7 +78,7 @@
                 arr.push('</div>');
                 arr[num/2] = '<span style="font-family:\'Georgia\', serif;padding:5px;color:rgb(80, 0, 130);background-color:rgb(255, 190, 10);font-size:450%;">' + specialWord + '</span>';
                 if (index == 1) {
-                    arr[num/2+1] = '<span style="font-family:\'Georgia\', serif;padding:5px;font-size:250%;"><u><b>' + 'https://tinyurl.com/wsopkf' + '</u></b></span>';
+                    arr[num/2+1] = '<span style="font-family:\'Georgia\', serif;padding:5px;font-size:225%;"><u><b>' + 'tinyurl.com/wsopkf' + '</u></b></span>';
                     arr[num/2+2] = '<span style="color:rgb(80, 0, 130);">a</span>';
                 }
                 return arr.join('');
