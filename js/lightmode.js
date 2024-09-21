@@ -22,6 +22,10 @@ function getCookie(name) {
 const modeToggle = document.getElementById('mode-toggle');
 const body = document.body;
 
+// default to light mode
+body.classList.add('light-mode');
+modeToggle.textContent = 'dark🌑';
+
 document.addEventListener('DOMContentLoaded', () => {
     const mode = getCookie('mode');
     if (mode === 'light') {
