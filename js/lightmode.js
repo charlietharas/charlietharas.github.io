@@ -20,7 +20,7 @@ function getCookie(name) {
 }
 
 function loadNav() {
-    fetch('../template/nav.html')
+    fetch('/template/nav.html')
         .then(response => response.text())
         .then(data => {
 
