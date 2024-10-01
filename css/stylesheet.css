@@ -17,6 +17,7 @@ nav {
     text-align:center;
 }
 body {
+    visibility: hidden;
     background-color: black;
     color: white;
     font-family: Arial, sans-serif;

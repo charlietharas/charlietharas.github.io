@@ -52,6 +52,8 @@ function loadNav() {
             }
         });
 
+        body.style.visibility = 'visible';
+
     });
 }
 
