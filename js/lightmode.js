@@ -19,28 +19,40 @@ function getCookie(name) {
     return null;
 }
 
-const modeToggle = document.getElementById('mode-toggle');
-const body = document.body;
+function loadNav() {
+    fetch('../template/nav.html')
+        .then(response => response.text())
+        .then(data => {
 
-document.addEventListener('DOMContentLoaded', () => {
-    const mode = getCookie('mode');
-    if (mode === 'dark') {
-        body.classList.remove('light-mode');
-        modeToggle.textContent = 'light☀️';
-    } else {
-        body.classList.add('light-mode');
-        modeToggle.textContent = 'dark🌑';
-    }
-});
+        document.querySelector('nav').innerHTML = data;
 
-modeToggle.addEventListener('click', () => {
-    body.classList.toggle('light-mode');
+        const modeToggle = document.getElementById('mode-toggle');
+        const body = document.body;
 
-    if (body.classList.contains('light-mode')) {
-        modeToggle.textContent = 'dark🌑';
-        setCookie('mode', 'light', 7);
-    } else {
-        modeToggle.textContent = 'light☀️';
-        setCookie('mode', 'dark', 7);
-    }
-});
+        document.addEventListener('DOMContentLoaded', () => {
+            const mode = getCookie('mode');
+            if (mode === 'dark') {
+                body.classList.remove('light-mode');
+                modeToggle.textContent = 'light☀️';
+            } else {
+                body.classList.add('light-mode');
+                modeToggle.textContent = 'dark🌑';
+            }
+        });
+
+        modeToggle.addEventListener('click', () => {
+            body.classList.toggle('light-mode');
+
+            if (body.classList.contains('light-mode')) {
+                modeToggle.textContent = 'dark🌑';
+                setCookie('mode', 'light', 7);
+            } else {
+                modeToggle.textContent = 'light☀️';
+                setCookie('mode', 'dark', 7);
+            }
+        });
+
+    });
+}
+
+document.addEventListener('DOMContentLoaded', loadNav);
