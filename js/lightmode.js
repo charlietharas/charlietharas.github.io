@@ -29,17 +29,15 @@ function loadNav() {
         const modeToggle = document.getElementById('mode-toggle');
         const body = document.body;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const mode = getCookie('mode');
-            if (mode === 'dark') {
-                body.classList.remove('light-mode');
-                modeToggle.textContent = 'light☀️';
-            } else {
-                body.classList.add('light-mode');
-                modeToggle.textContent = 'dark🌑';
-            }
-        });
-
+        const mode = getCookie('mode');
+        if (mode === 'dark') {
+            body.classList.remove('light-mode');
+            modeToggle.textContent = 'light☀️';
+        } else {
+            body.classList.add('light-mode');
+            modeToggle.textContent = 'dark🌑';
+        }
+        
         modeToggle.addEventListener('click', () => {
             body.classList.toggle('light-mode');
 
