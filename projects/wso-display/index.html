@@ -53,7 +53,7 @@
     </div>
     <script>
         async function readJSON() {
-            const response = await fetch('files/wso-words.json');
+            const response = await fetch('/files/wso-words.json');
             if (!response.ok) {
                 throw new Error('Failed to fetch wso-words.json: ' + response.statusText);
             }
