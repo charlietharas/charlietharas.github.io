@@ -1,15 +1,17 @@
 :root {
-    --sage: rgba(15, 90, 15, 0.75);
+    --sage: rgba(15, 90, 15);
+    --purple: rgb(95, 0, 160);
+    --sagetr: rgba(15, 90, 15, 0.75);
+    --purpletr: rgba(95, 0, 160, 0.75);
     --blue: rgb(20, 60, 180);
+    --gold: rgb(190, 165, 60);
     --offwhite: rgb(240, 220, 200);
     --offoffwhite: rgb(220, 200, 180);
-    --borderwhite: rgb(180, 160, 140);
     --offblack: rgb(20, 20, 20);
+    --borderwhite: rgb(180, 160, 140);
+    --borderblack: rgb(35, 35, 35);
     --hoverwhite: rgb(230, 210, 190);
     --hoverblack: rgb(15, 15, 15);
-    --borderblack: rgb(35, 35, 35);
-    --gold: rgb(190, 165, 60);
-    --purple: rgba(95, 0, 160, 0.75);
 }
 nav {
     font-size:1.25em;
@@ -24,7 +26,7 @@ body {
     visibility: hidden;
     background-color: black;
     color: white;
-    font-family: Arial, sans-serif;
+    font-family: Helvetica, sans-serif;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -48,7 +50,7 @@ body {
 }
 .light-mode .content:hover {
     background-color: var(--hoverwhite);
-    border-color: var(--sage);
+    border-color: var(--sagetr);
 }
 p {
     font-size: 1.35em;
