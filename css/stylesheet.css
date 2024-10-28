@@ -40,8 +40,7 @@ body {
     padding-left: 20px;
     padding-right: 20px;
     margin-bottom: 30px;
-    transition: background-color 0.35s;
-    transition: border-color 0.35s;
+    transition: background-color 0.35s, border-color 0.35s;
 }
 .content:hover {
     background-color: var(--hoverblack);
