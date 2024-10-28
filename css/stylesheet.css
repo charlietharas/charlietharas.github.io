@@ -1,11 +1,15 @@
 :root {
-    --sage: rgb(15, 90, 15);
+    --sage: rgba(15, 90, 15, 0.75);
     --blue: rgb(20, 60, 180);
     --offwhite: rgb(240, 220, 200);
     --offoffwhite: rgb(220, 200, 180);
+    --borderwhite: rgb(180, 160, 140);
     --offblack: rgb(20, 20, 20);
+    --hoverwhite: rgb(230, 210, 190);
+    --hoverblack: rgb(15, 15, 15);
+    --borderblack: rgb(35, 35, 35);
     --gold: rgb(190, 165, 60);
-    --purple: rgb(95, 0, 160);
+    --purple: rgba(95, 0, 160, 0.75);
 }
 nav {
     font-size:1.25em;
@@ -28,15 +32,24 @@ body {
     margin: 0;
 }
 .content {
-    border: 3px solid var(--purple);
+    border: 3px solid var(--borderblack);
     border-radius: 10px;
-    border-style:ridge;
     width:50%;
     max-width:840px;
     text-align: left;
     padding-left: 20px;
     padding-right: 20px;
     margin-bottom: 30px;
+    transition: background-color 0.35s;
+    transition: border-color 0.35s;
+}
+.content:hover {
+    background-color: var(--hoverblack);
+    border-color: var(--purple);
+}
+.light-mode .content:hover {
+    background-color: var(--hoverwhite);
+    border-color: var(--sage);
 }
 p {
     font-size: 1.35em;
@@ -68,16 +81,17 @@ a:hover.light-mode-button {
     color: rgb(65, 65, 65);
 }
 .light-mode header, 
-.light-mode a,
-.light-mode a:hover,
 .light-mode {
     background-color: var(--offwhite);
+    color:black;
+}
+.light-mode a{
     color:black;
 }
 .light-mode .content {
     background-color: var(--offwhite);
     color:black;
-    border: 3px solid var(--sage);
+    border: 3px solid var(--borderwhite);
 }
 .light-mode .tooltip {
     background-color: var(--offoffwhite);
