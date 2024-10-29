@@ -26,7 +26,7 @@ body {
     visibility: hidden;
     background-color: black;
     color: white;
-    font-family: Helvetica, sans-serif;
+    font-family: Helvetica, serif;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -53,10 +53,10 @@ body {
     border-color: var(--sagetr);
 }
 p {
-    font-size: 1.35em;
+    font-size: 1.3em;
 }
 li {
-    font-size: 1.35em;
+    font-size: 1.3em;
 }
 h2 {
     font-size: 1.75em;
@@ -141,4 +141,11 @@ a:hover.light-mode-button {
 }
 .toggle-list.show {
     display: block;
+}
+code {
+    font-size: 1.2em;
+    color: var(--sage);
+}
+.light-mode code {
+    color: var(--purple);
 }
