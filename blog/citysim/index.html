@@ -5,17 +5,334 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
     <link rel="stylesheet" href="/css/stylesheet.css">
-    <title>blog: citysim</title>
+    <title>making citysim</title>
+    <style>
+        .carousel-container {
+            max-width: 800px;
+            position: relative;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .carousel-slide {
+            display: none;
+            text-align: center;
+        }
+
+        .carousel-slide.active {
+            display: block;
+        }
+
+        .carousel-image {
+            width: 100%;
+            height: auto;
+            max-height: 800px;
+            object-fit: cover;
+        }
+
+        .carousel-caption {
+            padding: 15px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            margin-top: -4px;
+        }
+
+        .carousel-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 16px;
+            cursor: pointer;
+            font-size: 18px;
+            border-radius:3 px;
+            transition: background-color 0.35s;
+        }
+
+        .carousel-button:hover {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .prev {
+            left: 0;
+        }
+
+        .next {
+            right: 0;
+        }
+
+        .carousel-dots {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .dot {
+            height: 12px;
+            width: 12px;
+            margin: 0 4px;
+            background-color: #BBB;
+            border-radius: 50%;
+            display: inline-block;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .dot:hover {
+            background-color: #858585;
+        }
+
+        .dot.active {
+            background-color: #707070;
+        }
+    </style>
 </head>
 <nav></nav>
 <script src="/js/lightmode.js"></script>
 <body>
     <div class="content">
         <h1 style="text-align:center;">The MTA Taught Me Data Structures</h1>
-        <h3 style="text-align:center;">posted 10/1/2024</h2>
+        <h3 style="text-align:center;">posted 10/28/2024</h2>
     </div>
     <div class="content">
-        <p>Future posts will be added here.</p>
+        <p>
+            In the constant soul-search for new projects, a CS major might look for three attributes: usability (does this project have real-world applications?), teachability (will I learn a lot making this?), and interestingness (do I actually find this interesting?). For my final project in freshman year Data Structures, I got 2 out of 3, which I'll call good enough.
+        </p>
+        <p>
+            I was assigned a final project emphasizing an interactive, visual experience. Naturally, I wanted to build a simulator that could model the behavior of large amounts of individual agents in a well-defined system (of course). Making games is fun, but building such a simulator might better force me to focus on efficiency and good code (spoiler alert: this took a while). My motivating problem was 20th century urban decay in America. Let me begin explaining this problem with some pictures:
+        </p>
+        <div class="carousel-container">
+            <div class="carousel-slide urbanism active">
+                <img src="/files/images/cincinatti1.jpeg" alt="Before/after of 3rd and Central Streets, Cincinnati, OH" class="carousel-image">
+                <div class="carousel-caption">3rd and Central, Cincinatti, OH, demolished to make room for I71, displacing 25,000</div>
+            </div>
+            <div class="carousel-slide urbanism">
+                <img src="/files/images/cincinatti2.jpeg" alt="Aerial before/after of Cincinnati, OH" class="carousel-image">
+                <div class="carousel-caption">The once vibrant and dense neighborhood surrounding the now-defunct Union Terminal, Cincinatti, OH</div>
+            </div>
+            <div class="carousel-slide urbanism">
+                <img src="/files/images/kansascity1.jpeg" alt="Before/after of Main Street in Kansas City, MO" class="carousel-image">
+                <div class="carousel-caption">Main Street, Kansas City, MO, demolished to make way for I70, strangling the city's downtown</div>
+            </div>
+            <div class="carousel-slide urbanism">
+                <img src="/files/images/minneapolis1.jpeg" alt="Aerial Photo of I-35W construction in Minneapolis, MI" class="carousel-image">
+                <div class="carousel-caption">The construction of I-35W in Minneapolis, MW, which displaced thousands</div>
+            </div>
+            <div class="carousel-slide urbanism">
+                <img src="/files/images/pennstation1.jpg" alt="" class="carousel-image">
+                <div class="carousel-caption">The interior of old Penn Station, New York, NY, demolished to cut costs for the failing Penn Central Railroad</div>
+            </div>
+
+            <button class="carousel-button prev urbanism">❮</button>
+            <button class="carousel-button next urbanism">❯</button>
+            
+            <div class="carousel-dots"> <!-- top 1 coding moments -->
+                <span class="dot urbanism active"></span>
+                <span class="dot urbanism"></span>
+                <span class="dot urbanism"></span>
+                <span class="dot urbanism"></span>
+                <span class="dot urbanism"></span>
+            </div>
+        </div>
+        <p style="text-align:center;font-size:1em;margin-top:5px">
+            Images credit <a class="blue" href="https://twitter.com/carsruinedcity">@cars.destroyed.our.cities</a>
+        </p>
+        <p>
+            Around the middle of the 20th century, and with many thanks to the fanaticism of <a href="https://www.robertcaro.org/the-power-broker" target="_blank">Robert Moses</a>, local governments across America rubber-stamped federal proposals for devastating highway construction projects that displaced hundreds of thousands of people, disproportionately affecting minority communities. While the <a href="https://en.wikipedia.org/wiki/Interurban" target="_blank">interurbans</a> and longer <a href=https://idot.illinois.gov/content/dam/soi/en/web/idot/documents/transportation-system/maps---charts/railroad-maps/1928-historic-rail-map.pdf>intercity routes</a> that had once connected the country and helped form a unified American culture were becoming insolvent due to corruption, auto lobbying, and <a href="https://press.princeton.edu/books/paperback/9780691133867/white-flight">White Flight</a>, urban cores themselves began to decay as those with more wealth and political power migrated to suburbs and exurbs well outside city centers. Local governments beholden to these wealthy suburbanites needed to provide options for them to commute comfortably to their downtown jobs, thus, highways were built through the heart of most American cities, ripping apart urban fabric and tearing apart countless communities.
+        </p>
+        <p>
+            I'm passionate about this topic because it's hugely relevant today. The suburban exodus and urban decay of America has formed the demographics of today's political parties. It has set the stage for a difficult conversation around solutions to climate change. And it has led to, in my view, <a class="toggle-button blue">some problems</a>.
+            <ul class="toggle-list">
+                <li>Car-centric development tends to prioritize visibility for drivers, and building materials are typically limited to the asphalt and concrete necessary to provide roads for cars. Decoration and vegetation are thus neglected. This leads to lost biodiversity, dead animals, and the "<a href="https://www.epa.gov/heatislands" target="_blank" class="blue">urban heat island effect</a>", which <a href="https://www.foxweather.com/extreme-weather/phoenix-deadly-summer-heat-killed-645" target="_blank" class="blue">kills people</a>.</li>
+                <li>Car-centric development neglects pedestrian alternatives and promotes a sedentary lifestyle. Too much sitting also <a href="https://www.betterhealth.vic.gov.au/health/healthyliving/the-dangers-of-sitting" target="_blank" class="blue">kills people</a>.</li>
+                <li>Cars are responsible for <a href="https://e360.yale.edu/features/tire-pollution-toxic-chemicals" target="_blank" class="blue">80% of our microplastics</a> and lots of our air pollution. This is <a href="https://www.hsph.harvard.edu/news/hsph-in-the-news/vehicle-emissions-deaths/" target="_blank" class="blue">killing people</a>.</li>
+                <li>Cars themselves <a href="https://www.npr.org/2023/06/26/1184034017/us-pedestrian-deaths-high-traffic-car" target="_blank" class="blue">kill people</a> (lots).</li>
+                <li>Car-centric development is antisocial and frustrating. In your car, you are often alone. In traffic, everyone on the road is your enemy. This can end up <a href="https://safety.army.mil/MEDIA/Risk-Management-Magazine/ArtMID/7428/ArticleID/7701/Donapost-Be-So-Aggressive" target="_blank" class="blue">killing people</a>.</li>
+                <li>Car-centric development is <a href="https://www.visitpa.com/region/alleghenies/breezewood" target="_blank" class="blue">ugly</a>. This does not kill people.</li>
+                <li>Cars are much bigger than people, thus, car-centric development takes up lots of space. This extra space increases the cost of utilities and makes alternatives like walking, biking, and transit much harder to implement, forcing more people into cars in a vicious cycle.</li>
+                <li>For businesses, car dependency hurts the good guys and helps the bad guys. Commerical businesses, especially small businesses, <a href="https://www.bbva.ch/en/blog/inspiracion/invertir-en-zonas-peatonales-multiplica-los-ingresos-locales.html" target="_blank" class="blue">lose revenue</a>, while seedy lawyers, insurance firms, and polluting car companies profit.</li>
+                <li>Car dependency restricts social mobility. Lots of people can't afford a car. Those people lose access to jobs, shopping spaces, <a href="https://esl.uchicago.edu/2023/11/01/third-places-what-are-they-and-why-are-they-important-to-american-culture" target="_blank" class="blue">third places</a>, schools, healthcare, and more, making it harder for them to improve their lives.</li>
+                <li>Cars are <a href="https://www.sciencedirect.com/science/article/pii/S0921800921003943" target="_blank" class="blue">expensive for everyone</a>. The vehicles themselves are expensive, as are predatory insurance and maintenance costs. Direct subsidies like gas and infrastructure are loaded onto the taxpayer, who also unwittingly pays for negative externalities like healthcare (from all the pollution and crashes), climate change, and "free" parking.</li>
+            </ul>
+            
+        </p>
+        <p>
+            Defendants of American car dependency typically argue that alternative transportation options are inconvenient, dangerous, or otherwise undesirable, and that they are free to choose to drive their car at their convenience, exercising their freedom to get around without depending on other people and their schedules. But these arguments are predicated on the false depiction of non-car-oriented life that has been created by car dependency itself. Transit is only inconvenient because it has been underfunded a century. Biking is only dangerous (and cyclists are only <a href="https://slate.com/technology/2012/09/cyclists-are-annoying-why-you-think-theyre-a-menace-on-two-wheels.html" target="_blank">assholes</a>) because we do not build safe bike trails and lanes. Walking is only undesirable because we have ruined the landscape of our cities and spaced everything inconveniently far apart. Investing in car alternatives does not mean taking away the choice to drive, or forcing people back into cities. It just means making reasonable compromises about where cars can go and routing some of the <a href="https://www.urban.org/policy-centers/cross-center-initiatives/state-and-local-finance-initiative/state-and-local-backgrounders/highway-and-road-expenditures" target="_blank" class="blue">hundreds of billions of dollars</a> we spend on them to safer, community-friendly infrastructure.
+        </p>
     </div>
+    <div class="content">
+        <p>
+            I'm supposed to be a computer scientist, so that's enough about urbanism. Let's talk about this project. One of the (admittedly many) things I could see myself doing for a career is creating models of urban areas that help guide city planning and administration. But cities are really complicated, and I have to start somewhere, so I thought it best to begin with just one aspect: mobility.
+        </p>
+        <p>
+            In this context, mobility is how people travel around an urban area. And while focusing on cars or pedestrians would be interesting, lots of people are doing that already, so I decided to start somewhere closer to my heart: public transit. I wanted to simulate ridership flow throughout the New York City Subway.
+        </p>
+        <p>
+            We'll consider the 2D plane as our problem space and construct a network of stations, or <code>Nodes</code>, that have a name, coordinates, neighbors, and ridership (to probabilistically generate new riders). 
+        </p>
+        <p>
+            Our primary agents will be <code>Citizens</code>, who store a path and associated properties. Their entire purpose within the simulation is to generate this path and travel along it. To do this, citizens can walk to nearby nodes or board <code>Trains</code>. Trains move monotonously along a path to bring citizens from A to B. Trains are organized by <code>Line</code>, with each line being a simple structure that stores a path of nodes and cosmetic information.
+        </p>
+        <p>
+            Citizens find their way around using A*, with heuristics tweaked to reward express lines (applying a fixed penalty for every stop), penalize transfers between lines, and increase the cost of walking relative to taking the train. Node neighbors are generated using <code>Lines</code> and the euclidean distance between nearby nodes; these "walking transfers" are assigned to the <code>WalkingTransfer</code> <code>Line</code> to integrate with the existing framework. Because it is often important to know both the node and line for an edge from a source node, edges are often styled as <code>PathWrappers</code>, which just reference a <code>Node</code> and a <code>Line</code>.
+        </p>
+        <p>
+            Citizens make their way around based on their <code>status</code>, an enum, and <code>timer</code>, a float that determines the duration of their actions. Citizens who are waiting at a stop will check if any trains at that stop match the next step on their path (citizens store a reference to their current stop, which itself stores a small buffer of references to presently stopped trains). Citizens who just got to a stop will need to wait before immediately board a train to simulate real life transfer times. Etc.
+        </p>
+        <p>
+            When I first conceived this as a final project for my class, I wrote it in Java, and it was pretty straightforward, requiring essentially no optimization. The small graphics wrapper that my professor had provided batched renders, the JVM collected my garbage and ensured fast <code>ArrayList</code> operations, and everything ran smoothly. I wrote straightforward OOP code and Java did its job to make it easy. The simulation chugged along at around 30,000 concurrent <code>Citizen</code> agents at reasonable speed.
+        </p>
+        <div class="carousel-container">
+            <div class="carousel-slide java active">
+                <img src="/files/images/citysim-java1.gif" alt="Gif 1 of Java simulation" class="carousel-image">
+                <div class="carousel-caption">TODO GIF 1</div>
+            </div>
+            <div class="carousel-slide java">
+                <img src="/files/images/citysim-java2.gif" alt="Gif 2 of Java simulation" class="carousel-image">
+                <div class="carousel-caption">TODO GIF 2</div>
+            </div>
+            <div class="carousel-slide java">
+                <img src="/files/images/citysim-java3.gif" alt="Gif 3 of Java simulation" class="carousel-image">
+                <div class="carousel-caption">TODO GIF 3</div>
+            </div>
+
+            <button class="carousel-button prev java">❮</button>
+            <button class="carousel-button next java">❯</button>
+            
+            <div class="carousel-dots"> <!-- top 2 coding moments -->
+                <span class="dot java active"></span>
+                <span class="dot java"></span>
+                <span class="dot java"></span>
+            </div>
+        </div>
+    </div>
+    <div class="content">
+        <p>
+            But that wasn't fast enough, and my data wasn't structured enough. So, sporadically over the summer, I rewrote it in C++: my first real project in the language.
+        </p>
+        <p>
+            Would I make my Computer Organization prof proud and follow the paradigms of C, avoiding horrid object-oriented programming concepts like inheritance and polymorphism? No, it turned out to be easier and perhaps necessary to continue extending <code>Trains</code> and <code>Nodes</code> from drawable objects in the <a href="https://www.sfml-dev.org/" target="_blank" class="blue">graphics library</a> for easy rendering.
+        </p>
+        <p>
+            But using this library wasn't quite as easy as calling <code>DrawCircle()</code>: renders had to be batched using <code>VertexArrays</code> and <code>VertexBuffers</code> which either flush data to or store data in GPU VRAM, a process Java had presumably been handling automatically. At this point, I opted to skip drawing citizens entirely.
+        </p>
+        <p>
+            Once rendering was working, I had to implement multithreading to keep everything chugging along smoothly. My final implementation settles on a dedicated thread for rendering, another for pathfinding, and a thread pool that distributes citizen update tasks to various workers. For multithreading-performant CPUs, this means the entire <code>Citizens</code> vector can be accessed by many threads simultaneously, which is nice and fast.
+        </p>
+        <p>
+            The <code>Citizens</code> vector isn't just a vector--to reduce copy overhead, citizens are overwritten in-place. To do this list of "dead," overwrite-eligible citizens is stored in a stack, and the vector is only extended when the stack is empty. Race conditions are avoided by pooling newly-dead citizen pointers and waiting until the end of the frame to push them all to the stack at once. The inverse isn't a problem because there is only one pathfinding/citizen generation thread.
+        </p>
+        <p>
+            That thread is reasonably fast, and experiments with double-sided A* or multithreaded pathfinding did not yield positive results, but I still implemented a LRU cache with a ~20% hit rate that helps a good bit.
+        </p>
+        <p>
+            The results:
+        </p>
+        <div class="carousel-container">
+            <div class="carousel-slide cpp active">
+                <img src="/files/images/citysim-cpp1.gif" alt="Gif 1 of CPP simulation" class="carousel-image">
+                <div class="carousel-caption">TODO GIF 1</div>
+            </div>
+            <div class="carousel-slide cpp">
+                <img src="/files/images/citysim-cpp2.gif" alt="Gif 2 of CPP simulation" class="carousel-image">
+                <div class="carousel-caption">TODO GIF 2</div>
+            </div>
+            <div class="carousel-slide cpp">
+                <img src="/files/images/citysim-cpp3.gif" alt="Gif 3 of CPP simulation" class="carousel-image">
+                <div class="carousel-caption">TODO GIF 3</div>
+            </div>
+
+            <button class="carousel-button prev cpp">❮</button>
+            <button class="carousel-button next cpp">❯</button>
+            
+            <div class="carousel-dots"> <!-- top 3 coding moments -->
+                <span class="dot cpp active"></span>
+                <span class="dot cpp"></span>
+                <span class="dot cpp"></span>
+            </div>
+        </div>
+    </div>
+    </div>
+    <div class="content">
+        <p>
+            There is a lot to criticize about this project, and there is much that I still want to do. By virtue of having no formal training in C++, limited experience with C, and having spent more time than any developer should writing Java,<span class="info-button" id="cat-button"><sup>ⓘ</sup><span class="tooltip" id ="cat-tooltip"></span></span> this project's code is styled in a way that satisfies nobody. But <a href="https://www.youtube.com/watch?v=lIFE7h3m40U" class="blue">bodging is OK</a>.
+        </p>
+        <p>
+            What's less OK is the criteria that this app misses for being a "good CS project": usability. This "simulation" in no way simulates the real world. Riders are probabilistically generated from annual ridership data, neglecting real-world commute patterns or the daily schedule that drives the actual system. Train times, counts, and capacities are guesstimates designed mostly to keep the simulation visually appealing. But there are things that I can do to remedy this:
+        </p>
+        <ul>
+            <li>Use better ridership data and patterns to mimic e.g. rush hour, weekend service, more accurate commuters</li>
+            <li>Introduce more randomness in citizen timers and pathfinding heuristics for more realism</li>
+            <li>Use accurate train counts, speeds, and headways</li>
+            <li>Improve pathfinding with algorithms such as D* that can handle dynamically shifting weights from train arrivals (think of how Google Maps can path you on transit using timetables)</li>
+            <li>Give trains physics and have them move along their real-world track instead of idealized lines</li>
+            <li>Introduce delays and update capacity constraints to better model congestion</li>
+        </ul>
+        <p>
+            Throughout the development process, there were also several failed experiments to boost performance. These included path contraction, updates to the path cache, and bidirectional A*. These led me towards several possible future performance improvements:
+        </p>
+        <ul>
+            <li><b>Path contraction</b>, round 2: improved A* heuristics or preprocessing such as neighbor sorting could improve pathfinding performance with path (edge) contraction. Previously, this hurt performance because A* was checking too many extra edges. Candidates for path contraction could be major transfer points on the same line as a node.</li>
+            <li><b>Path compression</b>: after citizen paths are generated, citizens only really need to store transfer points in their path, rather than every node they pass through. This could reduce memory usage by 90+% and prevent unecessary checks on citizens who might just be sitting idle on a train, especially in combination with:</li>
+            <li><b>Priority queue</b> for citizen updates: every frame, every citizen is checked by a worker thread. CPU usage analysis shows that this is wasting a <i>lot</i> of time. This simply isn't necessary--at any given time, ~35% of citizens are on a train, which has a set arrival time--meaning that those citizens only need to be updated at that time, and don't need to be accessed every frame. Similar optimizations can be made with citizens waiting at nodes--they only need to be accessed when a train is in the station. These updates could be delayed by using a priority queue to manage the core citizen loop.</li>
+        </ul>
+        <p>
+            I hope to make it back around to these improvements as I grow as a programmer.
+        </p>
+    </div>
+    <script src="/js/tooltip.js"></script>
+    <script>
+        addListener('cat-button', 'cat-tooltip', '<img src="/files/images/warcat.png" alt="War-stricken feline.">');
+    </script>
+    <script>
+        const toggleButton = document.querySelector('.toggle-button');
+        const toggleList = document.querySelector('.toggle-list');
+        toggleButton.addEventListener('click', () => { toggleList.classList.toggle('show'); });
+    </script>
+    <script>
+        function showSlide(n, slides, dots) {
+            let index = n;
+            if (index < 0) {
+                index = slides.length - Math.abs(n) % slides.length;
+            }
+            if (index > slides.length-1) {
+                index = n % slides.length;
+            }
+
+            for (let i = 0; i < slides.length; i++) {
+                slides[i].classList.remove("active");
+                dots[i].classList.remove("active");
+            }
+
+            slides[index].classList.add("active");
+            dots[index].classList.add("active");
+        }
+        
+        function createCarousel(suffix) {
+            var slideIndex = 0;
+            const slides = document.getElementsByClassName("carousel-slide " + suffix);
+            const dots = document.getElementsByClassName("dot " + suffix);
+
+            document.getElementsByClassName("prev " + suffix)[0].addEventListener("click", () => {
+                showSlide(--slideIndex, slides, dots);
+            });
+
+            document.getElementsByClassName("next " + suffix)[0].addEventListener("click", () => {
+                showSlide(++slideIndex, slides, dots);
+            });
+
+            for (let i = 0; i < dots.length; i++) {
+                dots[i].addEventListener("click", () => {
+                    slideIndex = i;
+                    showSlide(slideIndex, slides, dots);
+                });
+            }
+        }
+
+        createCarousel("urbanism");
+        createCarousel("java");
+        createCarousel("cpp");
+    </script>
 </body>
 </html>
