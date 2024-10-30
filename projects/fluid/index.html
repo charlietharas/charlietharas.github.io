@@ -10,6 +10,9 @@
 <nav></nav>
 <script src="/js/lightmode.js"></script>
 <body>
+    <div id="content">
+        <h1>Eulerian fluid simulator</h1>
+    </div>
     <canvas id="sim" style="border:2px solid">
         <script>
             // followed along with https://www.youtube.com/@TenMinutePhysics
@@ -77,7 +80,7 @@
                 for (let i = 0; i < gridX; i++) {
                     for (let j = 0; j < gridY; j++) {
                         // draw pressure
-                        let color = pressureToColor(p[i * gridY + j], minP, maxP);
+                        let color = valToColor(p[i * gridY + j], minP, maxP);
                         if (s[i * gridY + j] === 0) {
                             color = [0, 0, 0];
                         }
@@ -105,27 +108,15 @@
                 let str = "pressure: " + minP.toFixed(0) + " - " + maxP.toFixed(0) + " N/m";
                 c.fillStyle ="#000000";
                 c.font = "16px Helvetica";
-                c.fillText(str, 10, 35);
+                c.fillText(str, 20, 50);
             }
 
-            // color function copied directly from TMP (mine was uglier)
-            function pressureToColor(pressure, min, max) {
-                pressure = Math.min(Math.max(pressure, min), max - 0.0001);
-                let d = max - min;
-                pressure = d == 0.0 ? 0.5 : (pressure - min) / d;
-                let m = 0.25;
-                let num = Math.floor(pressure / m);
-                let s = (pressure - num * m) / m;
-                let r, g, b;
-
-                switch (num) {
-                    case 0 : r = 0.0; g = s; b = 1.0; break;
-                    case 1 : r = 0.0; g = 1.0; b = 1.0-s; break;
-                    case 2 : r = s; g = 1.0; b = 0.0; break;
-                    case 3 : r = 1.0; g = 1.0 - s; b = 0.0; break;
-                }
-
-                return[255*r,255*g,255*b, 255]
+            function valToColor(val, min, max) {
+                let t = (val - min) / (max - min);
+                let r = 255 * t;
+                let g = 255 * (1 - t);
+                let b = 128 * (1 - t);
+                return [r, g, b, 255];
             }
 
             function div(i, j) {
@@ -246,7 +237,7 @@
                     y[(gridX-1) * gridY + j] = y[(gridX-2) * gridY + j];
                 }
                 
-                // TODO FIX
+                // // TODO FIX
                 // // semi-lagrangian advection
                 // newX.set(x)
                 // newY.set(y)
