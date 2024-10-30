@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <title>splash zone</title>
+</head>
+<nav></nav>
+<script src="/js/lightmode.js"></script>
+<body>
+    <canvas id="sim" style="border:2px solid">
+        <script>
+            // followed along with https://www.youtube.com/@TenMinutePhysics
+
+            var canvas = document.getElementById("sim");
+            var c = canvas.getContext("2d", {willReadFrequently: true});
+            canvas.width = window.innerWidth * 0.95;
+            canvas.height = window.innerHeight * 0.8;
+
+            var simWidth = 1;
+            var canvasScale = Math.min(canvas.width, canvas.height) / simWidth;
+            simWidth = canvas.width / canvasScale;
+            var simHeight = canvas.height / canvasScale;
+
+            function cX(x) {
+                return x * canvasScale;
+            }
+            function cY(y) {
+                return canvas.height - y * canvasScale;
+            }
+
+            var timeStep = 1/60.0;
+
+            var res = 100;
+            var dH = 1.0;
+            var dW = dH / simHeight * simWidth;
+            var h = dH / res;
+            var h1 = 1 / h;
+            var h2 = h / 2;
+
+            var gridX = Math.floor(dW / h);
+            var gridY = Math.floor(dH / h);
+
+            // velocity field
+            var x = new Float32Array(gridX * gridY);
+            var y = new Float32Array(gridX * gridY);
+
+            // all cells are fluid cells except borders
+            var s = new Float32Array(gridX * gridY);
+            s.fill(1);
+            for (let i = 0; i < gridX; i++) {
+                s[i * gridY + 0] = 0;
+                s[i * gridY + gridY-1] = 0;
+            }
+            for (let j = 0; j < gridY; j++) {
+                s[0 + j] = 0;
+                s[(gridX-1) * gridY + j] = 0;
+            }
+
+            // pressure field
+            var p = new Float32Array(gridX * gridY);
+
+            // draw methodology copied from TMP
+            function draw() {
+                c.clearRect(0, 0, canvas.width, canvas.height);
+
+                let minP = p[0];
+                let maxP = p[0];
+                for (let i = 0; i < gridX * gridY; i++) {
+                    minP = Math.min(minP, p[i]);
+                    maxP = Math.max(maxP, p[i]);
+                }
+
+                id = c.getImageData(0,0, canvas.width, canvas.height)
+                for (let i = 0; i < gridX; i++) {
+                    for (let j = 0; j < gridY; j++) {
+                        // draw pressure
+                        let color = pressureToColor(p[i * gridY + j], minP, maxP);
+                        if (s[i * gridY + j] === 0) {
+                            color = [0, 0, 0];
+                        }
+                        
+                        let x0 = Math.floor(cX(i * h));
+                        let y0 = Math.floor(cY((j+1) * h));
+                        let cx = Math.floor(canvasScale * simWidth * h) + 1;
+                        let cy = Math.floor(canvasScale * simWidth * h) + 1;
+
+                        for (let yi = y0; yi < y0 + cy; yi++) {
+                            let p = 4 * (yi * canvas.width + x0)
+
+                            for (let xi = 0; xi < cx; xi++) {
+                                id.data[p++] = color[0];
+                                id.data[p++] = color[1];
+                                id.data[p++] = color[2];
+                                id.data[p++] = 255;
+                            }
+                        }
+                    }
+		        }
+
+                c.putImageData(id, 0, 0);
+
+                let str = "pressure: " + minP.toFixed(0) + " - " + maxP.toFixed(0) + " N/m";
+                c.fillStyle ="#000000";
+                c.font = "16px Helvetica";
+                c.fillText(str, 10, 35);
+            }
+
+            // color function copied directly from TMP (mine was uglier)
+            function pressureToColor(pressure, min, max) {
+                pressure = Math.min(Math.max(pressure, min), max - 0.0001);
+                let d = max - min;
+                pressure = d == 0.0 ? 0.5 : (pressure - min) / d;
+                let m = 0.25;
+                let num = Math.floor(pressure / m);
+                let s = (pressure - num * m) / m;
+                let r, g, b;
+
+                switch (num) {
+                    case 0 : r = 0.0; g = s; b = 1.0; break;
+                    case 1 : r = 0.0; g = 1.0; b = 1.0-s; break;
+                    case 2 : r = s; g = 1.0; b = 0.0; break;
+                    case 3 : r = 1.0; g = 1.0 - s; b = 0.0; break;
+                }
+
+                return[255*r,255*g,255*b, 255]
+            }
+
+            function div(i, j) {
+                return x[(i+1) * gridY + j] - x[i * gridY + j] + y[i * gridY + j+1] - y[i * gridY + j];
+            }
+
+            function curl(i, j) {
+                return x[i * gridY + j+1] - x[i * gridY + j-1] + y[(i-1) * gridY + j] - y[(i+1) * gridY + j];
+            }
+
+            function collar(n, min, max) {
+                return Math.min(max, Math.max(min, n))
+            }
+
+            function neighborhoodX(i, j) {
+                return (x[i * gridY + (j-1)] + x[i * gridY + j] + x[(i+1) * gridY + j-1] + x[(i+1) * gridY + j]) / 4;
+            }
+
+            function neighborhoodY(i, j) {
+                return (y[(i-1) * gridY + j] + y[i * gridY + j] + y[(i-1) * gridY + j+1] + y[i * gridY + j+1]) / 4;
+            }
+
+            function sample(i, j, type) {
+                i = collar(i, h, gridX * h);
+                j = collar(j, h, gridY * h);
+
+                let dx = 0;
+                let dy = 0;
+
+                let field = null;
+                if (type === 0) { // advect x
+                    field = x;
+                    dy = h2;
+                } else if (type === 1) { // advect y
+                    field = y;
+                    dx = h2;
+                } else if (type === 2) { // advect smoke
+                    // TODO
+                    dx = h2;
+                    dy = h2;
+                    return null;
+                } else {
+                    return null;
+                }
+
+                let x0 = Math.min(Math.floor((x-dx)*h1), gridX-1);
+                let tx = ((x-dx) - x0*h) * h1;
+                let x1 = Math.min(x0 + 1, gridY-1);
+                
+                let y0 = Math.min(Math.floor((y-dy)*h1), gridY-1);
+                let ty = ((y-dy) - y0*h) * h1;
+                let y1 = Math.min(y0 + 1, gridY-1);
+
+                let sx = 1 - tx;
+                let sy = 1 - ty;
+
+                return sx * sy + field[x0 * gridY + y0] + 
+                    tx * sy * field[x1 * gridY + y0] + 
+                    tx * ty * field[x1 * gridY + y1] + 
+                    sx * ty * field[x0 * gridY + y1];
+            }
+
+            const timestep = 1/60;
+            const gravity = -9.8;
+            const density = 1000;
+            const overrelaxationCoefficient = 1.9;
+            const gsIterations = 40;
+            const vorticity = 100;
+            var requestFrameHandle;
+
+            // utility arrays used for advection
+            var newX = new Float32Array(gridX * gridY);
+            var newY = new Float32Array(gridX * gridY);
+            function sim() {
+                // integrate (simulate gravity)
+                for (let i = 1; i < gridX; i++) {
+                    for (let j = 1; j < gridY; j++) {
+                        if (s[i * gridY + j] !== 0 && s[i * gridY + j-1] !== 0) {
+                            y[i * gridY + j] += gravity * timestep;
+                        }
+                    }
+                }
+
+                // reset pressure field
+                p.fill(0);
+
+                // force incompressibility via gauss-seidel (requires extra iterations to stabilize)
+                for (let n = 0; n < gsIterations; n++) {
+                    for (let i = 1; i < gridX - 1; i++) {
+                        for (let j = 1; j < gridY - 1; j++) {
+                            if (s[i * gridY + j] === 0) {
+                                continue;
+                            }
+
+                            let d = overrelaxationCoefficient * div(i, j);
+
+                            let b = s[(i+1) * gridY + j] + s[(i-1) * gridY + j] + s[i * gridY + j+1] + s[i * gridY + j-1];
+                            if (b === 0) {
+                                continue;
+                            }
+                            
+                            x[i * gridY + j] += d * s[(i-1) * gridY + j] / b;
+                            x[(i+1) * gridY + j] -= d * s[(i+1) * gridY + j] / b;
+                            y[i * gridY + j] += d * s[i * gridY + j-1] / b;
+                            y[i * gridY + j+1] -= d * s[i * gridY + j+1] / b;
+                            p[i * gridY + j] -= d / b * density * h / timestep;
+                        }
+                    }
+                }
+
+                // set boundary tiles to copy neighbors
+                for (let i = 0; i < gridX; i++) {
+                    x[i * gridY + 0] = x[i * gridY+1];
+                    x[i * gridY + gridY-1] = x[i * gridY + gridY-2];
+                }
+                for (let j = 0; j < gridY; j++) {
+                    y[0 + j] = y[1 * gridY + j];
+                    y[(gridX-1) * gridY + j] = y[(gridX-2) * gridY + j];
+                }
+                
+                // TODO FIX
+                // // semi-lagrangian advection
+                // newX.set(x)
+                // newY.set(y)
+                // for (let i = 1; i < gridX; i++) {
+                //     for (let j = 1; j < gridY; j++) {
+                //         if (s[i * gridY + j] !== 0) {
+                //             if (s[(i-1) * gridY + j] !== 0 && j < gridY-1) {
+                //                 let x0 = i * h;
+                //                 let y0 = j * h + h2;
+                //                 let x1 = x[i * gridY + j];
+                //                 let y1 = neighborhoodY(i, j);
+                //                 x0 -= x1 * timestep;
+                //                 y0 -= y1 * timestep;
+                //                 x1 = sample(x0, y0, type=0);
+                //                 newX[i * gridY + j] = x1;
+                //             }
+                //             if (s[i * gridY + j-1] !== 0 && i < gridX-1) {
+                //                 let x0 = i * h + h2;
+                //                 let y0 = j * h;
+                //                 let x1 = neighborhoodX(i, j);
+                //                 let y1 = y[i * gridY + j];
+                //                 x0 -= x1 * timestep;
+                //                 y0 -= y1 * timestep;
+                //                 y1 = sample(x0, y0, type=1);
+                //                 newY[i * gridY + j] = y1;
+                //             }
+                //         }
+                //     }
+                // }
+                // x.set(newX)
+                // y.set(newY)
+
+                // // vorticity confinement to prevent viscocity
+                // // https://softologyblog.wordpress.com/2019/03/13/vorticity-confinement-for-eulerian-fluid-simulations/
+                // for (let i = 2; i < gridX - 2; i++) {
+                //     for (let j = 2; j < gridY - 2; j++) {
+                //         let dx = Math.abs(curl(i, j-1)) - Math.abs(curl(i, j+1));
+                //         let dy = Math.abs(curl(i+1, j)) - Math.abs(curl(i-1, j));
+                //         let len = Math.sqrt(dx * dx + dy * dy);
+                //         let c = curl(i, j)
+                //         x[i * gridY + j] += timestep * c * dx * vorticity / len;
+                //         y[i * gridY + j] += timestep * c * dy * vorticity / len;
+                //     }
+                // }
+
+                // https://stackoverflow.com/questions/42019256/a-simple-30fps-game-loop-in-javascript-using-requestanimationframe
+                cancelAnimationFrame(requestFrameHandle);
+                requestFrameHandle = requestAnimationFrame(draw);
+            }
+
+            setInterval(sim, 1000 * timestep);
+        </script>
+    </canvas>
+</body>
+</html>
