@@ -13,7 +13,7 @@
     <div id="content">
         <h1>Eulerian fluid simulator</h1>
     </div>
-    <canvas id="sim" style="border:2px solid">
+    <canvas id="sim" style="border:2px solid; margin-bottom:20px;">
         <script>
             // followed along with https://www.youtube.com/@TenMinutePhysics
 
@@ -65,6 +65,10 @@
             // pressure field
             var p = new Float32Array(gridX * gridY);
 
+            // density field
+            var d = new Float32Array(gridX * gridY);
+            d.fill(1);
+
             // draw methodology copied from TMP
             function draw() {
                 c.clearRect(0, 0, canvas.width, canvas.height);
@@ -84,6 +88,9 @@
                         if (s[i * gridY + j] === 0) {
                             color = [0, 0, 0];
                         }
+
+                        // draw smoke
+                        // TODO
                         
                         let x0 = Math.floor(cX(i * h));
                         let y0 = Math.floor(cY((j+1) * h));
@@ -127,12 +134,12 @@
                 return x[i * gridY + j+1] - x[i * gridY + j-1] + y[(i-1) * gridY + j] - y[(i+1) * gridY + j];
             }
 
-            function collar(n, min, max) {
+            function clamp(n, min, max) {
                 return Math.min(max, Math.max(min, n))
             }
 
             function neighborhoodX(i, j) {
-                return (x[i * gridY + (j-1)] + x[i * gridY + j] + x[(i+1) * gridY + j-1] + x[(i+1) * gridY + j]) / 4;
+                return (x[i * gridY + j-1] + x[i * gridY + j] + x[(i+1) * gridY + j-1] + x[(i+1) * gridY + j]) / 4;
             }
 
             function neighborhoodY(i, j) {
@@ -140,8 +147,8 @@
             }
 
             function sample(i, j, type) {
-                i = collar(i, h, gridX * h);
-                j = collar(j, h, gridY * h);
+                i = clamp(i, h, gridX * h);
+                j = clamp(j, h, gridY * h);
 
                 let dx = 0;
                 let dy = 0;
@@ -154,7 +161,7 @@
                     field = y;
                     dx = h2;
                 } else if (type === 2) { // advect smoke
-                    // TODO
+                    field = d;
                     dx = h2;
                     dy = h2;
                     return null;
@@ -162,13 +169,13 @@
                     return null;
                 }
 
-                let x0 = Math.min(Math.floor((x-dx)*h1), gridX-1);
-                let tx = ((x-dx) - x0*h) * h1;
-                let x1 = Math.min(x0 + 1, gridY-1);
+                let x0 = Math.min(Math.floor((i-dx) * h1), gridX-1);
+                let tx = ((i-dx) - x0*h) * h1;
+                let x1 = Math.min(x0+1, gridY-1);
                 
-                let y0 = Math.min(Math.floor((y-dy)*h1), gridY-1);
-                let ty = ((y-dy) - y0*h) * h1;
-                let y1 = Math.min(y0 + 1, gridY-1);
+                let y0 = Math.min(Math.floor((j-dy) * h1), gridY-1);
+                let ty = ((j-dy) - y0*h) * h1;
+                let y1 = Math.min(y0+1, gridY-1);
 
                 let sx = 1 - tx;
                 let sy = 1 - ty;
@@ -190,6 +197,7 @@
             // utility arrays used for advection
             var newX = new Float32Array(gridX * gridY);
             var newY = new Float32Array(gridX * gridY);
+            var newD = new Float32Array(gridX * gridY);
             function sim() {
                 // integrate (simulate gravity)
                 for (let i = 1; i < gridX; i++) {
@@ -237,41 +245,50 @@
                     y[(gridX-1) * gridY + j] = y[(gridX-2) * gridY + j];
                 }
                 
-                // // TODO FIX
-                // // semi-lagrangian advection
-                // newX.set(x)
-                // newY.set(y)
-                // for (let i = 1; i < gridX; i++) {
-                //     for (let j = 1; j < gridY; j++) {
-                //         if (s[i * gridY + j] !== 0) {
-                //             if (s[(i-1) * gridY + j] !== 0 && j < gridY-1) {
-                //                 let x0 = i * h;
-                //                 let y0 = j * h + h2;
-                //                 let x1 = x[i * gridY + j];
-                //                 let y1 = neighborhoodY(i, j);
-                //                 x0 -= x1 * timestep;
-                //                 y0 -= y1 * timestep;
-                //                 x1 = sample(x0, y0, type=0);
-                //                 newX[i * gridY + j] = x1;
-                //             }
-                //             if (s[i * gridY + j-1] !== 0 && i < gridX-1) {
-                //                 let x0 = i * h + h2;
-                //                 let y0 = j * h;
-                //                 let x1 = neighborhoodX(i, j);
-                //                 let y1 = y[i * gridY + j];
-                //                 x0 -= x1 * timestep;
-                //                 y0 -= y1 * timestep;
-                //                 y1 = sample(x0, y0, type=1);
-                //                 newY[i * gridY + j] = y1;
-                //             }
-                //         }
-                //     }
-                // }
-                // x.set(newX)
-                // y.set(newY)
+                // TODO FIX
+                // semi-lagrangian advection
+                newX.set(x);
+                newY.set(y);
+                for (let i = 1; i < gridX; i++) {
+                    for (let j = 1; j < gridY; j++) {
+                        if (s[i * gridY + j] !== 0) {
+                            if (s[(i-1) * gridY + j] !== 0 && j < gridY-1) {
+                                let x0 = i * h;
+                                let y0 = j * h + h2;
+                                x0 -= x[i * gridY + j] * timestep;
+                                y0 -= neighborhoodY(i, j) * timestep;
+                                newX[i * gridY + j] = sample(x0, y0, 0);
+                            }
+                            if (s[i * gridY + j-1] !== 0 && i < gridX-1) {
+                                let x0 = i * h + h2;
+                                let y0 = j * h;
+                                x0 -= neighborhoodX(i, j) * timestep;
+                                y0 -= y[i * gridY + j] * timestep;
+                                newY[i * gridY + j] = sample(x0, y0, 1);
+                            }
+                        }
+                    }
+                }
+                x.set(newX)
+                y.set(newY)
 
-                // // vorticity confinement to prevent viscocity
-                // // https://softologyblog.wordpress.com/2019/03/13/vorticity-confinement-for-eulerian-fluid-simulations/
+                // smoke advection
+                newD.set(d)
+                for (let i = 1; i < gridX-1; i++) {
+                    for (let j = 1; j < gridY-1; j++) {
+                        if (s[i * gridY + j] !== 0) {
+                            let x0 = (x[i * gridY + j] + x[(i+1) * gridY + j]) / 2;
+                            let y0 = (y[i * gridY + j] + y[i * gridY + j+1]) / 2;
+                            let x1 = i * h + h2 - x0 * timestep;
+                            let y1 = j * h + h2 - y0 * timestep;
+                            newD[i * gridY + j] = sample(i, j, 2);
+                        }
+                    }
+                }
+                d.set(newD)
+
+                // vorticity confinement to prevent viscocity
+                // https://softologyblog.wordpress.com/2019/03/13/vorticity-confinement-for-eulerian-fluid-simulations/
                 // for (let i = 2; i < gridX - 2; i++) {
                 //     for (let j = 2; j < gridY - 2; j++) {
                 //         let dx = Math.abs(curl(i, j-1)) - Math.abs(curl(i, j+1));
