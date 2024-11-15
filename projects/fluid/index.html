@@ -65,7 +65,7 @@
             var x = new Float32Array(gridX * gridY);
             var y = new Float32Array(gridX * gridY);
 
-            // all cells are fluid cells except borders
+            // all cells are fluid cells except boundaries
             var s = new Float32Array(gridX * gridY);
             s.fill(1.0);
 
@@ -76,7 +76,7 @@
             var d = new Float32Array(gridX * gridY);
             d.fill(1.0);
 
-            // create borders
+            // create boundaries
             for (let i = 0; i < gridX; i++) {
                 s[i * gridY + 0] = 0;
                 s[i * gridY + gridY-1] = 0;
@@ -98,6 +98,12 @@
                         s[i * gridY + j] = 0;
                     }
                 }
+            }
+
+            // create wind tunnel
+            for (let j = cy - pipeHeight / 2; j < cy + pipeHeight / 2; j++) {
+                x[1 * gridY + j] = windTunnelVel;
+                d[0 * gridY + j] = 0;
             }
 
             // draw methodology copied from TMP
@@ -252,8 +258,10 @@
                 let y0 = Math.min(Math.floor((j-yOffset) / cellHeight), gridY-1);
                 let y1 = Math.min(y0+1, gridY-1);
 
+                // produces rounding errors (1.00...9), but shouldn't be a problem
                 let tx = ((i-xOffset) - x0*cellHeight) / cellHeight;
                 let ty = ((j-yOffset) - y0*cellHeight) / cellHeight;
+
                 let sx = 1 - tx;
                 let sy = 1 - ty;
 
@@ -269,27 +277,27 @@
             const gravity = 0;
             const density = 1000;
             const pressureMultiplier = density * cellHeight / timestep;
-            const overrelaxationCoefficient = 1.9;
+            const overrelaxationCoefficient = 1.95;
             const gsIterations = 40;
-            // TODO toggle for vorticity confinement
-            const vorticity = 20;
+            const doVorticity = true;
+            const vorticity = 10;
             const vorticityLen = 5;
 
             // utility arrays used for advection
             var newX = new Float32Array(gridX * gridY);
             var newY = new Float32Array(gridX * gridY);
             var newD = new Float32Array(gridX * gridY);
-            
+
             function sim() {
                 // integration (add gravity)
                 if (gravity != 0) {
                     for (let i = 1; i < gridX; i++) {
-                    for (let j = 1; j < gridY; j++) {
-                        if (s[i * gridY + j] != 0 && s[i * gridY + j-1] != 0) {
-                            y[i * gridY + j] += gravity * timestep;
+                        for (let j = 1; j < gridY; j++) {
+                            if (s[i * gridY + j] != 0 && s[i * gridY + j-1] != 0) {
+                                y[i * gridY + j] += gravity * timestep;
+                            }
                         }
                     }
-                }
                 }
 
                 // reset pressure field
@@ -355,18 +363,23 @@
                 x.set(newX);
                 y.set(newY);
                 
-                // // vorticity confinement to prevent viscocity
-                // // https://softologyblog.wordpress.com/2019/03/13/vorticity-confinement-for-eulerian-fluid-simulations/
-                // for (let i = 2; i < gridX - 2; i++) {
-                //     for (let j = 2; j < gridY - 2; j++) {
-                //         let dx = Math.abs(curl(i, j-1)) - Math.abs(curl(i, j+1));
-                //         let dy = Math.abs(curl(i+1, j)) - Math.abs(curl(i-1, j));
-                //         let len = Math.sqrt(dx * dx + dy * dy) + vorticityLen;
-                //         let c = curl(i, j);
-                //         x[i * gridY + j] += timestep * c * dx * vorticity / len;
-                //         y[i * gridY + j] += timestep * c * dy * vorticity / len;
-                //     }
-                // }
+                // vorticity confinement to prevent viscocity
+                // https://softologyblog.wordpress.com/2019/03/13/vorticity-confinement-for-eulerian-fluid-simulations/
+                if (doVorticity) {
+                    for (let i = 2; i < gridX - 2; i++) {
+                        for (let j = 2; j < gridY - 2; j++) {
+                            if (s[i * gridY + j] != 0 && s[(i-1) * gridY + j] != 0 && s[(i+1) * gridY + j] != 0 && s[i * gridY + j-1] != 0 && s[i * gridY + j+1] != 0) {
+                                let dx = Math.abs(curl(i, j-1)) - Math.abs(curl(i, j+1));
+                                let dy = Math.abs(curl(i+1, j)) - Math.abs(curl(i-1, j));
+                                let len = Math.sqrt(dx * dx + dy * dy) + vorticityLen;
+                                let c = curl(i, j);
+                                x[i * gridY + j] += timestep * c * dx * vorticity / len;
+                                y[i * gridY + j] += timestep * c * dy * vorticity / len;
+                            }
+                        }
+                    }
+                }
+
 
                 // smoke advection
                 newD.set(d)
