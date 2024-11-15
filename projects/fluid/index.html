@@ -51,11 +51,12 @@
             var domainHeight = 1.0;
             var domainWidth = domainHeight / simHeight * simWidth;
             var cellHeight = domainHeight / resolution;
-            var cellResolution = resolution / domainHeight;
             var halfCellHeight = cellHeight / 2;
 
             var gridX = Math.floor(domainWidth / cellHeight);
             var gridY = Math.floor(domainHeight / cellHeight);
+            var xHeight = cellHeight * gridX;
+            var yHeight = cellHeight * gridY;
 
             const windTunnelVel = 2;
             var pipeHeight = Math.floor(0.1 * gridY);
@@ -114,15 +115,14 @@
                 for (let i = 0; i < gridX; i++) {
                     for (let j = 0; j < gridY; j++) {
                         let color = [0, 0, 0];
-                        if (s[i * gridY + j] !== 0) {
+                        if (s[i * gridY + j] != 0) {
                             // draw pressure
-                            if (drawTarget === 0) {
+                            if (drawTarget == 0) {
                                 color = valToColor(p[i * gridY + j], minP, maxP);
                             }
                             // draw smoke 
-                            else if (drawTarget === 1) {
+                            else if (drawTarget == 1) {
                                 color = valToGreyscale(d[i * gridY + j], 0, 1);
-                                console.log(d[i * gridY + j]);
                             }
                         }
                         
@@ -169,7 +169,7 @@
                     }
                 }
 
-                if (drawTarget === 0) {
+                if (drawTarget == 0) {
                     let str = "pressure: " + minP.toFixed(0) + " - " + maxP.toFixed(0) + " N/m";
                     c.fillStyle ="#000000";
                     c.font = "16px Helvetica";
@@ -225,49 +225,52 @@
             }
 
             function sample(i, j, type) {
-                i = clamp(i, cellHeight, gridX * cellHeight);
-                j = clamp(j, cellHeight, gridY * cellHeight);
+                i = clamp(i, cellHeight, xHeight);
+                j = clamp(j, cellHeight, yHeight);
 
-                let dx = 0;
-                let dy = 0;
+                let xOffset = 0;
+                let yOffset = 0;
 
                 let field = null;
-                if (type === 0) { // advect x
+                if (type == 0) { // advect x
                     field = x;
-                    dy = halfCellHeight;
-                } else if (type === 1) { // advect y
+                    yOffset = halfCellHeight;
+                } else if (type == 1) { // advect y
                     field = y;
-                    dx = halfCellHeight;
-                } else if (type === 2) { // advect smoke
+                    xOffset = halfCellHeight;
+                } else if (type == 2) { // advect smoke
                     field = d;
-                    dx = halfCellHeight;
-                    dy = halfCellHeight;
+                    xOffset = halfCellHeight;
+                    yOffset = halfCellHeight;
                 } else {
                     return null;
                 }
 
-                let x0 = Math.min(Math.floor((i-dx) * cellResolution), gridX-1);
-                let tx = ((i-dx) - x0*cellHeight) * cellResolution;
+                let x0 = Math.min(Math.floor((i-xOffset) / cellHeight), gridX-1);
                 let x1 = Math.min(x0+1, gridX-1);
                 
-                let y0 = Math.min(Math.floor((j-dy) * cellResolution), gridY-1);
-                let ty = ((j-dy) - y0*cellHeight) * cellResolution;
+                let y0 = Math.min(Math.floor((j-yOffset) / cellHeight), gridY-1);
                 let y1 = Math.min(y0+1, gridY-1);
 
+                let tx = ((i-xOffset) - x0*cellHeight) / cellHeight;
+                let ty = ((j-yOffset) - y0*cellHeight) / cellHeight;
                 let sx = 1 - tx;
                 let sy = 1 - ty;
 
-                return sx * sy + field[x0 * gridY + y0] + 
-                    tx * sy * field[x1 * gridY + y0] + 
-                    tx * ty * field[x1 * gridY + y1] + 
-                    sx * ty * field[x0 * gridY + y1];
+                let v = sx * sy + field[x0 * gridY + y0] + 
+                        tx * sy * field[x1 * gridY + y0] + 
+                        tx * ty * field[x1 * gridY + y1] + 
+                        sx * ty * field[x0 * gridY + y1];
+
+                return v;
             }
 
             const timestep = 1/60;
             const gravity = 0;
             const density = 1000;
+            const pressureMultiplier = density * cellHeight / timestep;
             const overrelaxationCoefficient = 1.9;
-            const gsIterations = 100;
+            const gsIterations = 40;
             // TODO toggle for vorticity confinement
             const vorticity = 20;
             const vorticityLen = 5;
@@ -279,10 +282,10 @@
             
             function sim() {
                 // integration (add gravity)
-                if (gravity !== 0) {
+                if (gravity != 0) {
                     for (let i = 1; i < gridX; i++) {
                     for (let j = 1; j < gridY; j++) {
-                        if (s[i * gridY + j] !== 0 && s[i * gridY + j-1] !== 0) {
+                        if (s[i * gridY + j] != 0 && s[i * gridY + j-1] != 0) {
                             y[i * gridY + j] += gravity * timestep;
                         }
                     }
@@ -296,23 +299,22 @@
                 for (let n = 0; n < gsIterations; n++) {
                     for (let i = 1; i < gridX - 1; i++) {
                         for (let j = 1; j < gridY - 1; j++) {
-                            if (s[i * gridY + j] === 0) {
-                                continue;
-                            }
+                            if (s[i * gridY + j] == 0) continue
 
-                            let d = overrelaxationCoefficient * div(i, j);
+                            let sx0 = s[(i+1) * gridY + j];
+                            let sx1 = s[(i-1) * gridY + j];
+                            let sy0 = s[i * gridY + j+1];
+                            let sy1 = s[i * gridY + j-1]
+                            let b = sx0 + sx1 + sy0 + sy1;
 
-                            let b = s[(i+1) * gridY + j] + s[(i-1) * gridY + j] + s[i * gridY + j+1] + s[i * gridY + j-1];
-                            if (b === 0) {
-                                continue;
-                            }
-                            d /= b;
+                            if (b == 0) continue;
+                            let adjustedDivergence = -overrelaxationCoefficient * div(i, j) / b;
                             
-                            x[i * gridY + j] += d * s[(i-1) * gridY + j];
-                            x[(i+1) * gridY + j] -= d * s[(i+1) * gridY + j];
-                            y[i * gridY + j] += d * s[i * gridY + j-1];
-                            y[i * gridY + j+1] -= d * s[i * gridY + j+1];
-                            p[i * gridY + j] -= d * density * cellHeight / timestep;
+                            x[(i+1) * gridY + j] += adjustedDivergence * sx0;
+                            x[i * gridY + j] -= adjustedDivergence * sx1;
+                            y[i * gridY + j+1] += adjustedDivergence * sy0;
+                            y[i * gridY + j] -= adjustedDivergence * sy1;
+                            p[i * gridY + j] += adjustedDivergence * pressureMultiplier;
                         }
                     }
                 }
@@ -332,20 +334,20 @@
                 newY.set(y);
                 for (let i = 1; i < gridX; i++) {
                     for (let j = 1; j < gridY; j++) {
-                        if (s[i * gridY + j] !== 0) {
-                            if (s[(i-1) * gridY + j] !== 0 && j < gridY-1) {
+                        if (s[i * gridY + j] != 0) {
+                            if (s[(i-1) * gridY + j] != 0 && j < gridY-1) {
                                 let x0 = i * cellHeight;
                                 let y0 = j * cellHeight + halfCellHeight;
                                 x0 -= x[i * gridY + j] * timestep;
                                 y0 -= neighborhoodY(i, j) * timestep;
-                                newX[i * gridY + j] = sample(x0/cellHeight, y0/cellHeight, 0);
+                                newX[i * gridY + j] = sample(x0, y0, 0);
                             }
-                            if (s[i * gridY + j-1] !== 0 && i < gridX-1) {
+                            if (s[i * gridY + j-1] != 0 && i < gridX-1) {
                                 let x0 = i * cellHeight + halfCellHeight;
                                 let y0 = j * cellHeight;
                                 x0 -= neighborhoodX(i, j) * timestep;
                                 y0 -= y[i * gridY + j] * timestep;
-                                newY[i * gridY + j] = sample(x0/cellHeight, y0/cellHeight, 1);
+                                newY[i * gridY + j] = sample(x0, y0, 1);
                             }
                         }
                     }
@@ -353,29 +355,29 @@
                 x.set(newX);
                 y.set(newY);
                 
-                // vorticity confinement to prevent viscocity
-                // https://softologyblog.wordpress.com/2019/03/13/vorticity-confinement-for-eulerian-fluid-simulations/
-                for (let i = 2; i < gridX - 2; i++) {
-                    for (let j = 2; j < gridY - 2; j++) {
-                        let dx = Math.abs(curl(i, j-1)) - Math.abs(curl(i, j+1));
-                        let dy = Math.abs(curl(i+1, j)) - Math.abs(curl(i-1, j));
-                        let len = Math.sqrt(dx * dx + dy * dy) + vorticityLen;
-                        let c = curl(i, j);
-                        x[i * gridY + j] += timestep * c * dx * vorticity / len;
-                        y[i * gridY + j] += timestep * c * dy * vorticity / len;
-                    }
-                }
+                // // vorticity confinement to prevent viscocity
+                // // https://softologyblog.wordpress.com/2019/03/13/vorticity-confinement-for-eulerian-fluid-simulations/
+                // for (let i = 2; i < gridX - 2; i++) {
+                //     for (let j = 2; j < gridY - 2; j++) {
+                //         let dx = Math.abs(curl(i, j-1)) - Math.abs(curl(i, j+1));
+                //         let dy = Math.abs(curl(i+1, j)) - Math.abs(curl(i-1, j));
+                //         let len = Math.sqrt(dx * dx + dy * dy) + vorticityLen;
+                //         let c = curl(i, j);
+                //         x[i * gridY + j] += timestep * c * dx * vorticity / len;
+                //         y[i * gridY + j] += timestep * c * dy * vorticity / len;
+                //     }
+                // }
 
                 // smoke advection
                 newD.set(d)
                 for (let i = 1; i < gridX-1; i++) {
                     for (let j = 1; j < gridY-1; j++) {
-                        if (s[i * gridY + j] !== 0) {
+                        if (s[i * gridY + j] != 0) {
                             let x0 = (x[i * gridY + j] + x[(i+1) * gridY + j]) / 2;
                             let y0 = (y[i * gridY + j] + y[i * gridY + j+1]) / 2;
                             let x1 = i * cellHeight + halfCellHeight - x0 * timestep;
                             let y1 = j * cellHeight + halfCellHeight - y0 * timestep;
-                            newD[i * gridY + j] = sample(x1/cellHeight, y1/cellHeight, 2);
+                            newD[i * gridY + j] = sample(x1, y1, 2);
                         }
                     }
                 }
