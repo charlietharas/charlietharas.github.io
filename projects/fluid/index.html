@@ -15,8 +15,6 @@
         <p style="text-align:center"><a href="https://youtu.be/iKAVRgIrUOU" target="_blank" class="blue">(inspo)</a></p>
     </div>
     <div id="buttons" style="margin-bottom:20px;">
-        <button id="showPressure">Show Pressure</button>
-        <button id="showDensity">Show Density</button>
         <button id="showVelocities">Show Velocity</button>
     </div>
     <canvas id="sim" style="border:2px solid; margin-bottom:25px;">
@@ -44,7 +42,7 @@
 
             var timeStep = 1/60.0;
 
-            var drawTarget = 1; // 0=pressure, 1=smoke
+            var drawTarget = 2; // 0=pressure, 1=smoke, 2=both
             var drawVelocities = false;
             const velScale = 0.05;
 
@@ -59,7 +57,7 @@
             var xHeight = cellHeight * gridX;
             var yHeight = cellHeight * gridY;
 
-            const windTunnelVel = 2.5;
+            const windTunnelVel = 1.5;
             var pipeHeight = Math.floor(0.1 * gridY);
 
             // velocity field
@@ -88,8 +86,8 @@
             }
 
             // create obstacle
-            let r = Math.floor(pipeHeight);
-            let cx = Math.floor(gridX/4);
+            let r = Math.floor(pipeHeight * 1.5)
+            let cx = Math.floor(gridX/2);
             let cy = Math.floor(gridY/2);
             for (let i = cx - r; i < cx + r; i++) {
                 for (let j = cy - r; j < cy + r; j++) {
@@ -107,6 +105,16 @@
                 d[0 * gridY + j] = 0;
             }
 
+            // disabled vertical tunnels
+            /*
+            for (let i = cx - pipeHeight / 2; i < cx + pipeHeight / 2; i++) {
+                y[i * gridY + 1] = windTunnelVel;
+                y[i * gridY + gridY - 1] = -windTunnelVel;
+                d[i * gridY + 0] = 0;
+                d[i * gridY + gridY - 1] = 0;
+            } 
+            */
+
             // draw methodology copied from TMP
             function draw() {
                 c.clearRect(0, 0, canvas.width, canvas.height);
@@ -118,10 +126,10 @@
                     maxP = Math.max(maxP, p[i]);
                 }
 
-                id = c.getImageData(0,0, canvas.width, canvas.height)
+                let id = c.getImageData(0,0, canvas.width, canvas.height)
                 for (let i = 0; i < gridX; i++) {
                     for (let j = 0; j < gridY; j++) {
-                        let color = [0, 0, 0];
+                        let color = [125, 125, 125];
                         if (s[i * gridY + j] != 0) {
                             // draw pressure
                             if (drawTarget == 0) {
@@ -130,6 +138,14 @@
                             // draw smoke 
                             else if (drawTarget == 1) {
                                 color = valToGreyscale(d[i * gridY + j], 0, 1);
+                            } 
+                            // draw pretty pressure + smoke
+                            else if (drawTarget == 2) {
+                                let dens = d[i * gridY + j];
+                                color = valToColor(p[i * gridY + j], minP, maxP);
+                                for (let k = 0; k < 3; k++) {
+                                    color[k] = Math.max(0, color[k] - 255 * dens);
+                                }
                             }
                         }
                         
@@ -154,7 +170,7 @@
                 c.putImageData(id, 0, 0);
 
                 if (drawVelocities) {
-                    c.strokeStyle = "#000000";
+                    c.strokeStyle = "#FFFFFF";
 
                     for (let i = 0; i < gridX; i++) {
                         for (let j = 0; j < gridY; j++) {
@@ -175,14 +191,6 @@
                         }
                     }
                 }
-
-                if (drawTarget == 0) {
-                    let str = "pressure: " + minP.toFixed(0) + " - " + maxP.toFixed(0) + " N/m";
-                    c.fillStyle ="#000000";
-                    c.font = "16px Helvetica";
-                    c.fillText(str, 20, 50); 
-                }
-
             }
 
             function valToColor(val, min, max) {
@@ -278,7 +286,7 @@
             const gravity = 0;
             const density = 1000;
             const pressureMultiplier = density * cellHeight / timestep;
-            const overrelaxationCoefficient = 1.95;
+            const overrelaxationCoefficient = 1.9;
             const gsIterations = 40;
             const doVorticity = true;
             const vorticity = 10;
@@ -404,12 +412,6 @@
 
             setInterval(sim, 1000 * timestep);
 
-            document.getElementById("showPressure").addEventListener("click", function () {
-                drawTarget = 0;
-            });
-            document.getElementById("showDensity").addEventListener("click", function () {
-                drawTarget = 1;
-            });
             document.getElementById("showVelocities").addEventListener("click", function () {
                 drawVelocities = !drawVelocities;
             });
