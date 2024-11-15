@@ -43,7 +43,7 @@
 
             var timeStep = 1/60.0;
 
-            var drawTarget = 0; // 0=pressure, 1=smoke
+            var drawTarget = 1; // 0=pressure, 1=smoke
             var drawVelocities = false;
             const velScale = 0.05;
 
@@ -58,7 +58,7 @@
             var xHeight = cellHeight * gridX;
             var yHeight = cellHeight * gridY;
 
-            const windTunnelVel = 2;
+            const windTunnelVel = 2.5;
             var pipeHeight = Math.floor(0.1 * gridY);
 
             // velocity field
