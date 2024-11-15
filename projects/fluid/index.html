@@ -265,7 +265,7 @@
                 let sx = 1 - tx;
                 let sy = 1 - ty;
 
-                let v = sx * sy + field[x0 * gridY + y0] + 
+                let v = sx * sy * field[x0 * gridY + y0] + 
                         tx * sy * field[x1 * gridY + y0] + 
                         tx * ty * field[x1 * gridY + y1] + 
                         sx * ty * field[x0 * gridY + y1];
