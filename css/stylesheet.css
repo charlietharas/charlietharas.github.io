@@ -162,3 +162,45 @@ code {
 .light-mode code {
     color: var(--purple);
 }
+
+/* MOBILE FORMATTING (chatgpt) */
+@media (max-width: 768px) {
+    body {
+        flex-direction: column;
+        padding: 10px;
+    }
+    nav {
+        font-size: 1em;
+        padding: 10px;
+        top: 10px;
+    }
+    .content {
+        width: 90%;
+        padding: 10px;
+        margin-bottom: 20px;
+    }
+    p, li {
+        font-size: 1em;
+    }
+    h2 {
+        font-size: 1.5em;
+    }
+    .tooltip {
+        bottom: 10px;
+        left: 5px;
+        max-width: 90%;
+        padding: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    nav {
+        font-size: 0.9em;
+    }
+    p, li {
+        font-size: 0.9em;
+    }
+    h2 {
+        font-size: 1.25em;
+    }
+}
