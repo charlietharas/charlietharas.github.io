@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <title>stove top</title>
+</head>
+<nav></nav>
+<script src="/js/lightmode.js"></script>
+<body>
+    <div id="content">
+        <h1 style="text-align:center">Fire simulator</h1>
+        <p style="text-align:center"><a href="https://youtu.be/RsgmS3ZxDtc" target="_blank" class="blue">(inspo)</a>, <a href="/projects/fluid" class="blue">(underlying fluid simulator)</a></p>
+        <p style="font-size:small">TODO: tweak params, fix sim stability, smoothen color gradient</p>
+    </div>
+    <div id="buttons" style="margin-bottom:20px;">
+        <button id="showVelocities">Show Velocity</button>
+    </div>
+    <canvas id="sim" style="border:2px solid; margin-bottom:25px;">
+        <script>
+            // followed along with https://www.youtube.com/@TenMinutePhysics tutorial #21
+
+            var canvas = document.getElementById("sim");
+            var c = canvas.getContext("2d", {willReadFrequently: true});
+            canvas.width = window.innerWidth * 0.95;
+            canvas.height = window.innerHeight * 0.8;
+
+            var simWidth = 1;
+            var canvasScale = Math.min(canvas.width, canvas.height) / simWidth;
+            simWidth = canvas.width / canvasScale;
+            var simHeight = canvas.height / canvasScale;
+
+            var requestFrameHandle;
+
+            function cX(x) {
+                return x * canvasScale;
+            }
+            function cY(y) {
+                return canvas.height - y * canvasScale;
+            }
+
+            var timeStep = 1/60.0;
+
+            var drawVelocities = false;
+            const velScale = 0.05;
+
+            var resolution = 100;
+            var domainHeight = 1.0;
+            var domainWidth = domainHeight / simHeight * simWidth;
+            var cellHeight = domainHeight / resolution;
+            var halfCellHeight = cellHeight / 2;
+
+            var gridX = Math.floor(domainWidth / cellHeight);
+            var gridY = Math.floor(domainHeight / cellHeight);
+            var xHeight = cellHeight * gridX;
+            var yHeight = cellHeight * gridY;
+
+            // velocity field
+            var x = new Float32Array(gridX * gridY);
+            var y = new Float32Array(gridX * gridY);
+
+            // all cells are fluid cells except boundaries
+            var s = new Float32Array(gridX * gridY);
+            s.fill(1.0);
+
+            // temperature field
+            var t = new Float32Array(gridX * gridY);
+
+            // swirls list
+            var swirls = []
+
+            // create boundaries
+            for (let i = 0; i < gridX; i++) {
+                s[i * gridY + 0] = 0;
+                // s[i * gridY + gridY-1] = 0;
+            }
+            for (let j = 0; j < gridY; j++) {
+                // s[0 + j] = 0;
+                // s[(gridX-1) * gridY + j] = 0;
+            }
+
+            // draw methodology copied from TMP
+            function draw() {
+                c.clearRect(0, 0, canvas.width, canvas.height);
+
+                let id = c.getImageData(0,0, canvas.width, canvas.height)
+                for (let i = 0; i < gridX; i++) {
+                    for (let j = 0; j < gridY; j++) {
+                        let color = [125, 125, 125];
+                        if (s[i * gridY + j] != 0) {
+                            color = valToColor(t[i * gridY + j], 0, 1);
+                        }
+                        
+                        let x0 = Math.floor(cX(i * cellHeight));
+                        let y0 = Math.floor(cY((j+1) * cellHeight));
+                        let cx = Math.floor(canvasScale * simWidth * cellHeight) + 1;
+                        let cy = Math.floor(canvasScale * simWidth * cellHeight) + 1;
+
+                        for (let yi = y0; yi < y0 + cy; yi++) {
+                            let p = 4 * (yi * canvas.width + x0)
+
+                            for (let xi = 0; xi < cx; xi++) {
+                                id.data[p++] = color[0];
+                                id.data[p++] = color[1];
+                                id.data[p++] = color[2];
+                                id.data[p++] = 255;
+                            }
+                        }
+                    }
+                }
+
+                c.putImageData(id, 0, 0);
+
+                if (drawVelocities) {
+                    c.strokeStyle = "#000000";
+
+                    for (let i = 0; i < gridX; i++) {
+                        for (let j = 0; j < gridY; j++) {
+                            let x0 = cX(i * cellHeight);
+                            let x1 = cX(i * cellHeight + x[i * gridY + j] * velScale);
+                            let y0 = cY((j + 0.5) * cellHeight);
+                            c.beginPath();
+                            c.moveTo(x0, y0);
+                            c.lineTo(x1, y0);
+                            c.stroke();
+
+                            x0 = cX((i + 0.5) * cellHeight);
+                            y0 = cY(j * cellHeight);
+                            let y1 = cY(j * cellHeight + y[i * gridY + j] * velScale);
+                            c.moveTo(x0, y0);
+                            c.moveTo(x0, y1);
+                            c.stroke();
+                        }
+                    }
+                }
+            }
+
+            function valToColor(val, min, max) {
+                let t = Math.max(0, Math.min(1, (val - min) / (max - min)));
+
+                if (t <= 0) {
+                    return [255, 255, 255];
+                }
+                if (t <= 0.3) {
+                    let s = Math.floor(lerp(t / 0.3, 50, 205));
+                    return [s, s, s];
+                }
+                if (t <= 0.5) {
+                    let n = (t - 0.3) / 0.2;
+                    let r = Math.floor(lerp(n, 205, 255));
+                    let g = Math.floor(lerp(n, 0, 205));
+                    return [r, g, 0];
+                }
+                let n = (t - 0.5) / 0.5;
+                let g = Math.floor(lerp(n, 0, 255));
+                return [255, g, 0];
+            }
+
+            function valToGreyscale(val, min, max) {
+                let t = (val - min) / (max - min) * 255;
+                return [t, t, t, 255];
+            }
+
+            function div(i, j) {
+                return x[(i+1) * gridY + j] - x[i * gridY + j] + y[i * gridY + j+1] - y[i * gridY + j];
+            }
+
+            function curl(i, j) {
+                return x[i * gridY + j+1] - x[i * gridY + j-1] + y[(i-1) * gridY + j] - y[(i+1) * gridY + j];
+            }
+
+            function clamp(n, min, max) {
+                return Math.min(max, Math.max(min, n))
+            }
+
+            // assumes 0 <= n <= 1
+            function lerp(n, a, b) {
+                return a * (1 - n) + b * n;
+            }
+
+            function swirlKernel(d) {
+                d /= swirlRadius;
+                if (d < 0.8) {
+                    return 1;
+                } else {
+                    return lerp((1-d) * 5, 1, 0);
+                }
+            }
+
+            function neighborhoodX(i, j) {
+                return (x[i * gridY + j-1] + x[i * gridY + j] + x[(i+1) * gridY + j-1] + x[(i+1) * gridY + j]) / 4;
+            }
+
+            function neighborhoodY(i, j) {
+                return (y[(i-1) * gridY + j] + y[i * gridY + j] + y[(i-1) * gridY + j+1] + y[i * gridY + j+1]) / 4;
+            }
+
+            function sample(i, j, type) {
+                i = clamp(i, cellHeight, xHeight);
+                j = clamp(j, cellHeight, yHeight);
+
+                let xOffset = 0;
+                let yOffset = 0;
+
+                let field = null;
+                if (type == 0) { // advect x
+                    field = x;
+                    yOffset = halfCellHeight;
+                } else if (type == 1) { // advect y
+                    field = y;
+                    xOffset = halfCellHeight;
+                } else if (type == 2) { // advect temperature field
+                    field = t;
+                    xOffset = halfCellHeight;
+                    yOffset = halfCellHeight;
+                } else {
+                    return null;
+                }
+
+                let x0 = Math.min(Math.floor((i-xOffset) / cellHeight), gridX-1);
+                let x1 = Math.min(x0+1, gridX-1);
+                
+                let y0 = Math.min(Math.floor((j-yOffset) / cellHeight), gridY-1);
+                let y1 = Math.min(y0+1, gridY-1);
+
+                let tx = ((i-xOffset) - x0*cellHeight) / cellHeight;
+                let ty = ((j-yOffset) - y0*cellHeight) / cellHeight;
+
+                let sx = 1 - tx;
+                let sy = 1 - ty;
+
+                let v = sx * sy * field[x0 * gridY + y0] + 
+                        tx * sy * field[x1 * gridY + y0] + 
+                        tx * ty * field[x1 * gridY + y1] + 
+                        sx * ty * field[x0 * gridY + y1];
+
+                return v;
+            }
+
+            const timestep = 1/60;
+            const gravity = -9.81;
+            const density = 1000;
+            const overrelaxationCoefficient = 1.9;
+            const gsIterations = 40;
+            const doVorticity = true;
+            const vorticity = 10;
+            const vorticityLen = 5;
+
+            const distanceFromEdge = 20;
+
+            const lift = 1.5;
+            const liftAccel = 5.0;
+            const fireCoolRate = 5;
+            const smokeCoolRate = 2;
+            const swirlProbability = 0.03;
+            const swirlRadius = 5;
+            const swirlAngularVel = 15;
+            const swirlMaxAge = 80;
+
+            // utility arrays used for advection
+            var newX = new Float32Array(gridX * gridY);
+            var newY = new Float32Array(gridX * gridY);
+            var newT = new Float32Array(gridX * gridY);
+
+            function sim() {
+                // initialize temperature field at fire sources
+                for (let i = distanceFromEdge; i < gridX-distanceFromEdge; i++) {
+                    t[i * gridY + 1] = 1;
+
+                    // create swirls
+                    let rand = Math.random();
+                    if (rand < swirlProbability) {
+                        let omega = swirlAngularVel;
+                        if (rand < swirlProbability / 2) {
+                            omega *= -1;
+                        }
+                        swirls.push({
+                            "x": i,
+                            "y": 1,
+                            "r": swirlRadius,
+                            "omega": omega,
+                            "age": 0,
+                        })
+                    }
+                }
+
+                // kill old/out-of-bounds swirls
+                swirls = swirls.filter(s => s.age < swirlMaxAge && s.x > 0 && s.x < gridX && s.y > 0 && s.y < gridY);
+
+                // cool temperature field
+                for (let i = 0; i < gridX; i++) {
+                    for (let j = 0; j < gridY; j++) {
+                        let t0 = t[i * gridY + j];
+                        if (t0 == 0) {
+                            continue;
+                        }
+                        // fire cools more rapidly than smoke
+                        let dt = fireCoolRate;
+                        if (t0 < 0.5) {
+                            dt = smokeCoolRate;
+                        }
+                        t[i * gridY + j] = Math.max(t0 - dt * timestep, 0);
+                    }
+                }
+
+                // integration (add gravity, lift)
+                if (gravity != 0) {
+                    for (let i = 1; i < gridX; i++) {
+                        for (let j = 1; j < gridY; j++) {
+                            if (s[i * gridY + j] != 0 && s[i * gridY + j-1] != 0) {
+                                y[i * gridY + j] += gravity * timestep;
+                                y[i * gridY + j] += liftAccel * (lift * t[i * gridY + j] - y[i * gridY + j]) * timestep;
+                            }
+                        }
+                    }
+                }
+
+                // advect swirls, add turbulence
+                swirls.forEach(swirl => {
+                    // apply swirl velocity effects
+                    let i = swirl.x;
+                    let j = swirl.y
+                    let r = swirl.r;
+                    let omega = swirl.omega;
+                    let sx = sample(i * cellHeight, j * cellHeight, 0);
+                    let sy = sample(i * cellHeight, j * cellHeight, 1);
+                    for (let a = Math.max(i-r, 0); a < Math.min(i+r, gridX); a++) {
+                        for (let b = Math.max(j-r, 0); b < Math.min(j+r, gridY); b++) {
+                            let dx = i - a;
+                            let dy = j - b;
+                            let dd = Math.sqrt(dx * dx + dy * dy);
+                            if (dd >= r) {
+                                continue;
+                            }
+                            x[a * gridY + b] += (sx - x[a * gridY + b] - dy * omega) * swirlKernel(dd) * timestep;
+                            y[a * gridY + b] += (sy - y[a * gridY + b] + dx * omega) * swirlKernel(dd) * timestep;
+                        }
+                    }
+                    swirl.x = Math.floor(i + sx * timestep);
+                    swirl.y = Math.floor(j + sy * timestep);
+                });
+
+                // gauss-seidel projection (forces fluid incompressibility, requires extra iterations to stabilize)
+                for (let n = 0; n < gsIterations; n++) {
+                    for (let i = 1; i < gridX - 1; i++) {
+                        for (let j = 1; j < gridY - 1; j++) {
+                            if (s[i * gridY + j] == 0) continue
+
+                            let sx0 = s[(i+1) * gridY + j];
+                            let sx1 = s[(i-1) * gridY + j];
+                            let sy0 = s[i * gridY + j+1];
+                            let sy1 = s[i * gridY + j-1]
+                            let b = sx0 + sx1 + sy0 + sy1;
+
+                            if (b == 0) continue;
+                            let adjustedDivergence = -overrelaxationCoefficient * div(i, j) / b;
+                            
+                            x[(i+1) * gridY + j] += adjustedDivergence * sx0;
+                            x[i * gridY + j] -= adjustedDivergence * sx1;
+                            y[i * gridY + j+1] += adjustedDivergence * sy0;
+                            y[i * gridY + j] -= adjustedDivergence * sy1;
+                        }
+                    }
+                }
+
+                // extrapolation (set boundary tiles to copy neighbors)
+                for (let i = 0; i < gridX; i++) {
+                    x[i * gridY + 0] = x[i * gridY + 1];
+                    x[i * gridY + gridY-1] = x[i * gridY + gridY-2];
+                }
+                for (let j = 0; j < gridY; j++) {
+                    y[0 + j] = y[1 * gridY + j];
+                    y[(gridX-1) * gridY + j] = y[(gridX-2) * gridY + j];
+                }
+                
+                // semi-lagrangian advection
+                newX.set(x);
+                newY.set(y);
+                for (let i = 1; i < gridX; i++) {
+                    for (let j = 1; j < gridY; j++) {
+                        if (s[i * gridY + j] != 0) {
+                            if (s[(i-1) * gridY + j] != 0 && j < gridY-1) {
+                                let x0 = i * cellHeight;
+                                let y0 = j * cellHeight + halfCellHeight;
+                                x0 -= x[i * gridY + j] * timestep;
+                                y0 -= neighborhoodY(i, j) * timestep;
+                                newX[i * gridY + j] = sample(x0, y0, 0);
+                            }
+                            if (s[i * gridY + j-1] != 0 && i < gridX-1) {
+                                let x0 = i * cellHeight + halfCellHeight;
+                                let y0 = j * cellHeight;
+                                x0 -= neighborhoodX(i, j) * timestep;
+                                y0 -= y[i * gridY + j] * timestep;
+                                newY[i * gridY + j] = sample(x0, y0, 1);
+                            }
+                        }
+                    }
+                }
+                x.set(newX);
+                y.set(newY);                
+                
+                // vorticity confinement to prevent viscocity
+                // https://softologyblog.wordpress.com/2019/03/13/vorticity-confinement-for-eulerian-fluid-simulations/
+                if (doVorticity) {
+                    for (let i = 2; i < gridX - 2; i++) {
+                        for (let j = 2; j < gridY - 2; j++) {
+                            if (s[i * gridY + j] != 0 && s[(i-1) * gridY + j] != 0 && s[(i+1) * gridY + j] != 0 && s[i * gridY + j-1] != 0 && s[i * gridY + j+1] != 0) {
+                                let dx = Math.abs(curl(i, j-1)) - Math.abs(curl(i, j+1));
+                                let dy = Math.abs(curl(i+1, j)) - Math.abs(curl(i-1, j));
+                                let len = Math.sqrt(dx * dx + dy * dy) + vorticityLen;
+                                let c = curl(i, j);
+                                x[i * gridY + j] += timestep * c * dx * vorticity / len;
+                                y[i * gridY + j] += timestep * c * dy * vorticity / len;
+                            }
+                        }
+                    }
+                }
+
+                // temperature field advection
+                newT.set(t)
+                for (let i = 1; i < gridX-1; i++) {
+                    for (let j = 1; j < gridY-1; j++) {
+                        if (s[i * gridY + j] != 0) {
+                            let x0 = (x[i * gridY + j] + x[(i+1) * gridY + j]) / 2;
+                            let y0 = (y[i * gridY + j] + y[i * gridY + j+1]) / 2;
+                            let x1 = i * cellHeight + halfCellHeight - x0 * timestep;
+                            let y1 = j * cellHeight + halfCellHeight - y0 * timestep;
+                            newT[i * gridY + j] = sample(x1, y1, 2);
+                        }
+                    }
+                }
+                t.set(newT)
+
+                // https://stackoverflow.com/questions/42019256/a-simple-30fps-game-loop-in-javascript-using-requestanimationframe
+                cancelAnimationFrame(requestFrameHandle);
+                requestFrameHandle = requestAnimationFrame(draw);
+            }
+
+            setInterval(sim, 1000 * timestep);
+
+            document.getElementById("showVelocities").addEventListener("click", function () {
+                drawVelocities = !drawVelocities;
+            });
+        </script>
+    </canvas>
+</body>
+</html>
