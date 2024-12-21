@@ -23,15 +23,17 @@
     --buttonwhite: rgb(190, 190, 190);
     --buttonhover: rgb(65, 65, 65);
 }
+
 nav {
-    font-size:1.25em;
+    font-size: 1.1em;
     padding: 20;
     align-items: center;
-    justify-content:center;
+    justify-content: center;
     top: 20px;
     width: 100%;
-    text-align:center;
+    text-align: center;
 }
+
 body {
     visibility: hidden;
     background-color: var(--offblack);
@@ -43,164 +45,207 @@ body {
     align-items: center;
     margin: 0;
 }
+
 .content {
-    border: 3px solid var(--borderblack);
-    border-radius: 10px;
-    width:50%;
-    max-width:840px;
+    border: 2px solid var(--borderblack);
+    border-radius: 8px;
+    width: 45%;
+    max-width: 800px;
     text-align: left;
-    padding-left: 20px;
-    padding-right: 20px;
-    margin-bottom: 30px;
+    padding-left: 18px;
+    padding-right: 18px;
+    margin-bottom: 25px;
     transition: background-color 0.35s, border-color 0.35s;
 }
+
 .content:hover {
     background-color: var(--hoverblack);
     border-color: var(--whitetr);
 }
+
 .light-mode .content:hover {
     background-color: var(--hoverwhite);
     border-color: var(--blacktr);
 }
-p {
-    font-size: 1.3em;
+
+p, li {
+    font-size: 1.2em;
 }
-li {
-    font-size: 1.3em;
-}
+
 h2 {
-    font-size: 1.75em;
+    font-size: 1.6em;
 }
+
 a {
     color: white;
     text-decoration: none;
 }
+
 a.blue {
     color: dodgerblue;
-    text-decoration:none;
+    text-decoration: none;
 }
+
 a:hover {
     text-decoration: underline;
 }
+
 a.blue:hover {
-    text-decoration:underline;
+    text-decoration: underline;
 }
+
 a:hover.light-mode-button {
     color: var(--buttonwhite);
 }
+
 .light-mode a:hover.light-mode-button {
     color: var(--buttonhover);
 }
+
 .light-mode header, 
 .light-mode {
     background-color: var(--offwhite);
-    color:var(--offblack);
+    color: var(--offblack);
 }
-.light-mode a{
-    color:var(--offblack);
+
+.light-mode a {
+    color: var(--offblack);
 }
+
 .light-mode .content {
     background-color: var(--offwhite);
-    color:var(--offblack);
-    border: 3px solid var(--borderwhite);
+    color: var(--offblack);
+    border: 2px solid var(--borderwhite);
 }
+
 .light-mode .tooltip {
     background-color: var(--offoffwhite);
 }
+
 .light-mode a.blue {
     color: var(--sage);
 }
+
 .info-button {
     cursor: pointer;
     position: relative;
-    font-size:0.9em;
+    font-size: 0.8em;
 }
+
 .info-button:hover {
-    cursor:grab;
+    cursor: grab;
 }
+
 .tooltip-text {
-    font-size:0.85em;
-    margin-top:0px;
-    margin-bottom:0px;
+    font-size: 1em;
+    margin-top: 0px;
+    margin-bottom: 0px;
 }
+
 .tooltip {
-    display:none;
+    display: none;
     position: absolute;
     bottom: 20px;
     left: 10px;
-    height:min-content;
+    height: min-content;
     background-color: var(--offoffblack);
     border: 1px solid var(--borderwhite);
-    border-radius: 5px;
+    border-radius: 6px;
     z-index: 1000;
-    flex-grow:1;
-    width:max-content;
-    max-width: 350px;
-    padding:10px;
-    flex-direction:column;
+    flex-grow: 1;
+    width: max-content;
+    max-width: 300px;
+    padding: 10px;
+    flex-direction: column;
 }
+
 .light-mode .tooltip {
     border: 1px solid var(--borderblack);
 }
+
 .toggle-button {
-    margin-bottom:0px;
+    margin-bottom: 0px;
 }
+
 .toggle-button:hover {
-    cursor:grab;
-    text-decoration:underline;
+    cursor: grab;
+    text-decoration: underline;
 }
+
 .toggle-list {
     display: none;
 }
+
 .toggle-list.show {
     display: block;
 }
+
 code {
-    font-size: 1.2em;
+    font-size: 1em;
     color: var(--sage);
 }
+
 .light-mode code {
     color: var(--purple);
 }
 
-/* MOBILE FORMATTING (chatgpt) */
 @media (max-width: 768px) {
     body {
         flex-direction: column;
         padding: 10px;
     }
+
     nav {
-        font-size: 1em;
-        padding: 10px;
-        top: 10px;
+        font-size: 1.1em;
+        padding: 15px;
+        margin-bottom: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: center;
     }
+
     .content {
-        width: 90%;
-        padding: 10px;
+        width: 95%;
+        max-width: none;
+        padding: 15px;
         margin-bottom: 20px;
     }
+
     p, li {
-        font-size: 1em;
+        font-size: 1.1em;
     }
+
     h2 {
-        font-size: 1.5em;
+        font-size: 1.4em;
+        margin-top: 1em;
+        margin-bottom: 0.5em;
     }
+
     .tooltip {
         bottom: 10px;
         left: 5px;
-        max-width: 90%;
-        padding: 8px;
+        max-width: 95%;
+        padding: 12px;
     }
 }
 
 @media (max-width: 480px) {
     nav {
-        font-size: 0.9em;
+        font-size: 1em;
+        gap: 10px;
     }
+
     p, li {
-        font-size: 0.9em;
+        font-size: 1em;
+        margin: 0.8em 0;
     }
+
     h2 {
-        font-size: 1.25em;
+        font-size: 1.3em;
+    }
+
+    .content {
+        padding: 12px;
     }
 }
