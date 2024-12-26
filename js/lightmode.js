@@ -19,34 +19,54 @@ function getCookie(name) {
     return null;
 }
 
+function getSystemThemePreference() {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+    }
+    return 'light';
+}
+
+function setLightMode() {
+    const modeToggle = document.getElementById('mode-toggle');
+    const body = document.body;
+    body.classList.add('light-mode');
+    modeToggle.textContent = 'dark🌑';
+    setCookie('mode', 'light', 7);
+}
+
+function setDarkMode() {
+    const modeToggle = document.getElementById('mode-toggle');
+    const body = document.body;
+    body.classList.remove('light-mode');
+    modeToggle.textContent = 'light☀️';
+    setCookie('mode', 'dark', 7);
+}
+
 function loadNav() {
     fetch('/template/nav.html')
         .then(response => response.text())
         .then(data => {
-
         document.querySelector('nav').innerHTML = data;
 
-        const modeToggle = document.getElementById('mode-toggle');
         const body = document.body;
-
-        const mode = getCookie('mode');
-        if (mode === 'dark') {
-            body.classList.remove('light-mode');
-            modeToggle.textContent = 'light☀️';
-        } else {
-            body.classList.add('light-mode');
-            modeToggle.textContent = 'dark🌑';
+        var mode = getCookie('mode');
+        const modeToggle = document.getElementById('mode-toggle');
+        
+        if (!mode) {
+            mode = getSystemThemePreference();
         }
         
-        modeToggle.addEventListener('click', () => {
-            body.classList.toggle('light-mode');
-
+        if (mode === 'dark') {
+            setDarkMode();
+        } else {
+            setLightMode();
+        }
+    
+        modeToggle.addEventListener('click', () => {  
             if (body.classList.contains('light-mode')) {
-                modeToggle.textContent = 'dark🌑';
-                setCookie('mode', 'light', 7);
+                setDarkMode();
             } else {
-                modeToggle.textContent = 'light☀️';
-                setCookie('mode', 'dark', 7);
+                setLightMode();
             }
         });
 
