@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <title>scribble</title>
+
+    <style>
+        .video-container {
+            position: relative;
+            margin: 20px 0;
+        }
+        video, canvas {
+            width: 100%;
+            max-width: 640px;
+            transform: scaleX(-1);
+        }
+        canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        .prediction {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        #debug {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 10px;
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<nav></nav>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/4.22.0/tf.min.js"></script>
+<script src="/js/lightmode.js"></script>
+<body>
+    <div class="content">
+        <h1>Scribble</h1>
+        <p>✌️ Index finger up to write<br>✌️ Index and middle up for next letter<br>✌️ Index and middle and ring up to move without writing</p>
+    </div>
+    <div class="prediction" id="prediction"></div>
+    <div class="video-container">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+    </div>
+    <div id="debug"></div>
+    <div class="content">
+        <p>
+            Inspired by an old submission to HackTrin, a high school hackathon hosted by Trinity HS in NYC.
+        </p>
+        <p>
+            Privacy notice: <i>absolutely no</i> data from your camera is processed, stored, or sent anywhere but your computer; this is raw HTML/JS only.
+        </p>
+        <p>
+            <a href="https://github.com/charlietharas/hacktrin-scribble/tree/js" class="blue">Source code for original project</a>
+        </p>
+    </div>
+
+    <script>
+        class FingerPen {
+            constructor() {
+                this.video = document.getElementById('video');
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.prediction = document.getElementById('prediction');
+                this.prediction.textContent = '...';
+                this.debug = document.getElementById('debug');
+                
+                this.letterPoints = [[]];
+                this.lastPoint = null;
+                this.model = null;
+                
+                this.hands = new Hands({
+                    locateFile: (file) => {
+                        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+                    }
+                });
+                
+                this.hands.setOptions({
+                    maxNumHands: 1,
+                    modelComplexity: 1,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+
+
+                
+                this.init();
+            }
+
+            async init() {
+                try {
+                    this.canvas.width = 640;
+                    this.canvas.height = 480;
+                    
+                    this.hands.onResults(results => this.onResults(results));
+                    
+                    const camera = new Camera(this.video, {
+                        onFrame: async () => {
+                            await this.hands.send({image: this.video});
+                        },
+                        width: 640,
+                        height: 480
+                    });
+                    camera.start();
+                    
+                    this.model = await tf.loadLayersModel('model.json', {
+                        weightUrlConverter: (url) => {
+                            return url.replace('./', '/projects/scribble/');
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error initializing:', error);
+                }
+
+                try {
+                    this.charMap = {};
+                    const response = await fetch('emnist_balanced_mapping.txt');
+                    const text = await response.text();
+                    const lines = text.split('\n');
+
+                    lines.forEach(line => {
+                        if (line.trim() !== "") {
+                            const [c, v] = line.trim().split(' ');
+                            this.charMap[parseInt(c, 10)] = String.fromCharCode(parseInt(v, 10));
+                        }
+                    });
+                } catch (error) {
+                    console.error("Could not load mapping.txt file");
+                }
+            }
+
+            preprocessLetter(points) {
+                if (points.length < 2) return null;
+                
+                const CANVAS_SIZE = 280;
+                const minX = Math.min(...points.map(p => p[0]));
+                const maxX = Math.max(...points.map(p => p[0]));
+                const minY = Math.min(...points.map(p => p[1]));
+                const maxY = Math.max(...points.map(p => p[1]));
+                
+                const width = maxX - minX;
+                const height = maxY - minY;
+                const scale = Math.min(
+                    (CANVAS_SIZE * 0.8) / width,
+                    (CANVAS_SIZE * 0.8) / height
+                );
+                
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = CANVAS_SIZE;
+                tempCanvas.height = CANVAS_SIZE;
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                tempCtx.fillStyle = 'black';
+                tempCtx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+                
+                const centerX = (CANVAS_SIZE - width * scale) / 2;
+                const centerY = (CANVAS_SIZE - height * scale) / 2;
+                
+                tempCtx.strokeStyle = 'white';
+                tempCtx.lineWidth = 20;
+                tempCtx.lineCap = 'round';
+                tempCtx.lineJoin = 'round';
+                tempCtx.beginPath();
+                
+                points.forEach((point, i) => {
+                    const x = CANVAS_SIZE - ((point[0] - minX) * scale + centerX);
+                    const y = (point[1] - minY) * scale + centerY;
+                    if (i === 0) tempCtx.moveTo(x, y);
+                    else tempCtx.lineTo(x, y);
+                });
+                tempCtx.stroke();
+                
+                this.debug.innerHTML = `<img src="${tempCanvas.toDataURL()}" style="width: 100px; height: 100px;">`;
+                
+                return tf.browser.fromPixels(tempCanvas, 1)
+                    .resizeBilinear([28, 28])
+                    .div(255.0)
+                    .expandDims(0);
+            }
+
+            fingerStates(landmarks) {
+                const indexTip = landmarks[8];
+                const middleTip = landmarks[12];
+                const ringTip = landmarks[16];
+                const wrist = landmarks[0];
+
+                const indexWristDist = Math.hypot(indexTip.x - wrist.x, indexTip.y - wrist.y);
+                const indexPointed = indexWristDist < 0.25;
+                if (indexPointed) return [true, false, false];
+                
+                const indexMiddleDist = Math.hypot(indexTip.x - middleTip.x, indexTip.y - middleTip.y);
+                const indexRingDist = Math.hypot(indexTip.x - ringTip.x, indexTip.y - ringTip.y);
+                const middleRaised = indexMiddleDist < 0.1;
+                const ringRaised = indexRingDist < 0.15;
+
+                return [true, middleRaised, ringRaised];
+            }
+
+            async onResults(results) {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                    const landmarks = results.multiHandLandmarks[0];
+                    const indexTip = landmarks[8];
+                    
+                    const x = indexTip.x * this.canvas.width;
+                    const y = indexTip.y * this.canvas.height;
+                    
+                    var [indexRaised, middleRaised, ringRaised] = this.fingerStates(landmarks);
+                    
+                    if (indexRaised && !middleRaised && !ringRaised) {
+                        if (this.lastPoint) {
+                            const dist = Math.hypot(x - this.lastPoint[0], y - this.lastPoint[1]);
+                            if (dist < 300) {
+                                this.letterPoints[this.letterPoints.length - 1].push([x, y]);
+                            }
+                        }
+                        this.lastPoint = [x, y];
+                    } else if (indexRaised && middleRaised && !ringRaised) {
+                        if (this.letterPoints[this.letterPoints.length - 1].length > 0) {
+                            const letterImg = this.preprocessLetter(this.letterPoints[this.letterPoints.length - 1]);
+                            if (letterImg) {
+                                const pred = await this.model.predict(letterImg).data();
+                                const predIndex = pred.indexOf(Math.max(...pred));
+                                this.prediction.textContent = `Detected: ${this.charMap[predIndex]}`;
+                            }
+                            this.letterPoints = [[]];
+                        }
+                        this.lastPoint = null;
+                    } else if (indexRaised && middleRaised && ringRaised) {
+                        this.lastPoint = null;
+                    }
+                }
+
+                let lastLetter = this.letterPoints[this.letterPoints.length - 1];
+                
+                this.ctx.strokeStyle = 'lawnGreen';
+                this.ctx.lineWidth = 5;
+                for (let i = 0; i < lastLetter.length - 1; i++) {
+                    let x0 = lastLetter[i][0];
+                    let y0 = lastLetter[i][1];
+                    let x1 = lastLetter[i+1][0];
+                    let y1 = lastLetter[i+1][1];
+
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x0, y0);
+                    this.ctx.lineTo(x1, y1);
+                    this.ctx.stroke();
+                }
+            }
+        }
+
+        window.onload = () => new FingerPen();
+    </script>
+</body>
+</html>
