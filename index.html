@@ -86,5 +86,52 @@
         const toggleList = document.querySelector('.toggle-list');
         toggleButton.addEventListener('click', () => { toggleList.classList.toggle('show'); });
     </script>
+    <div class="content">
+        <div id="commit-info"></div>
+    </div>
+    <script>
+        async function displaycommits(owner, repo, branch = 'main') {
+            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/commits/${branch}`;
+
+            try {
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    throw new Error(`GitHub API error: ${response.status}`);
+                }
+
+                const commits = await response.json();
+
+                if (commits && commits.commit) {
+                    const commitMessage = commits.commit.message;
+                    const commitDate = new Date(commits.commit.author.date).toLocaleString();
+
+                    const commitInfoElement = document.getElementById('commit-info');
+
+                    if (commitInfoElement) {
+                        commitInfoElement.innerHTML = `
+                            <p><b>Last Updated ${commitDate}:</b> ${commitMessage}</p>
+                        `;
+                    } else {
+                        console.error("Element with ID 'commit-info' not found.");
+                    }
+                } else {
+                    throw new Error("No commits found");
+                }
+            } catch (error) {
+                console.error('Error fetching commit:', error);
+                const commitInfoElement = document.getElementById('commit-info');
+                if (commitInfoElement) {
+                    commitInfoElement.innerHTML = "<p>Error fetching commits</p>";
+                }
+            }
+        }
+
+        const owner = 'charlietharas';
+        const repo = 'charlietharas.github.io';
+        const branch = 'deploy';
+
+        displaycommits(owner, repo, branch);
+    </script>
 </body>
 </html>
