@@ -2,6 +2,7 @@
     /* accents for specially formatted text */
     --sage: rgba(20, 90, 20);
     --purple: rgb(95, 0, 160);
+    --ramp: #e4f222;
     
     /* unhighlighted borders */
     --blacktr: rgba(5, 5, 5, 0.75);
@@ -74,6 +75,14 @@ p, li {
 
 h2 {
     font-size: 1.6em;
+}
+
+.ramp {
+    color: var(--ramp);
+}
+
+.light-mode .ramp {
+    color: var(--sage);
 }
 
 a {
