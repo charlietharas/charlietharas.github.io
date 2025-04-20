@@ -22,7 +22,7 @@
         <p>Hi! I hope you're having a good day. This is my website, which has some information about me and my life. Check it out:</p>
 		<h2>Education</h2>
         <p>
-            <b>TL;DR</b>: I'll graduate with a BA in Computer Science & Mathematics from <a href="https://williams.edu" target="_blank">Williams College</a> in 2027.<span class="info-button" id="degree-button"><sup>ⓘ</sup><span class="tooltip" id ="degree-tooltip"></span></span> I'll also be <a href="https://exeter.williams.edu/" target="_blank">studying abroad at Oxford</a> for '25-'26.
+            <b>TL;DR</b>: I'll graduate with a BA in Computer Science & Mathematics, and a concentration in Cognitive Science, from <a href="https://williams.edu" target="_blank">Williams College</a> in 2027.<span class="info-button" id="degree-button"><sup>ⓘ</sup><span class="tooltip" id ="degree-tooltip"></span></span> I'll also be <a href="https://exeter.williams.edu/" target="_blank">studying abroad at Oxford</a> for '25-'26.
         </p>
         <div id="interests">
             <p class="toggle-button">Interests 🖱</p>
@@ -48,11 +48,11 @@
         <h2>Experience</h2>
             <p>You might want to check out my <a href="files/resume.pdf" target="_blank" class="blue">resume</a>, but here's a quick overview:</p>
             <ul>
-                <li><b>Incoming SWE intern</b> at <a href="https://ramp.com/" class="ramp" target="_blank">Ramp</a>.</li>
-                <li><b>Freelance developer</b> for <a href="https://bensonplace.org/" class="blue" target="_blank">The Benson Place Farm</a>: built out an old-school full-stack customized inventory management and order placement system using native JS and Go, hosted locally by reverse proxy.</li>
+                <li><b>Incoming backend SWE intern</b> at <a href="https://ramp.com/" class="ramp" target="_blank">Ramp</a>.</li>
+                <li><b>Freelance developer</b> for <a href="https://bensonplace.org/" class="blue" target="_blank">The Benson Place Farm</a>: built out an old-school full-stack customized inventory management and order placement system using native JS and Go, hosted locally by reverse proxy. Now serving hundreds of customers a month!</li>
                 <li><b>Research assistant</b> for <a href="https://csci.williams.edu/people/faculty/mark-hopkins/" class="blue" target="_blank">Mark Hopkins</a> and his thesis student: examined effects of low-resource bilingual vs. multilingual training on parallel and non-overlapping corpora with Meta's NLLB model. Developed hypotheses and ran experiments (e.g. language encryption, different source domains) to explain variance in accuracy b/c of lexeme overlap, domain overfitting, and model capacity.</li>
+                <li><b>Student developer</b> for <a class="blue" href="https://wso.williams.edu/about" target="_blank">Williams Students Online</a>: work with Williams students to improve microservices for our student-run website. Integrated professor reviews with our course scheduler and developed a major requirements planner and custom major editor. Now working on rolling out Redis-based caching, supporting dining hall reviews, and integrating newsfeeds into a school-wide calendar.</li>
                 <li><b>Transportation researcher</b> for <a class="blue" href="https://learning-in-action.williams.edu/" target="_blank">Williams Center for Learning in Action</a>: worked with a TDM<span class="info-button" id="tdmc-button"><sup> ⓘ</sup><span class="tooltip" id ="tdmc-tooltip"></span></span> coordinator to design a carpool web app, built out a backend using Go and GORM, researched mobility patterns in the Berkshires.</li>
-                <li><b>Student developer</b> for <a class="blue" href="https://wso.williams.edu/about" target="_blank">Williams Students Online</a>: developing useful features on our student-led website like synchronizing our course scheduler with professor ratings and enabling easier searches for interesting classes.</li>
                 <li><b>Research intern</b> for <a class="blue" href="https://www.mskcc.org/research-programs/msk-mind-multi-modal-integration-data" target="_blank">MSKCC MIND</a>: high school summer internship, worked on CV models to identify cell features, collaborated with data engineers to streamline the training pipeline for non-tech-savvy pathologists.</li>
                 <li><b>COO (and various other roles)</b> at <a class="blue" href="https://steelcitycodes.org" target="_blank">Steel City Codes</a>: managed operations for a large<span class="info-button" id="scc-button"><sup> ⓘ</sup><span class="tooltip" id ="scc-tooltip"></span></span> nonprofit: conducted outreach, hired and onboarded tutors and administrative staff, organized sponsored events, raised money, planned hackathons, designed curricula. Started as a tutor in 2020 and worked my way up.</li>
             </ul>
@@ -61,6 +61,7 @@
         <h2>Other Links</h2>
         <p>There are lots of links to cool articles/videos under <a href="#interests" class="blue">my interests</a>. Otherwise:</p>
         <ul>
+            <li><a href="https://ai-2027.com">AI 2027</a> (which I have strong feelings about)</li>
             <li><a href="https://ash.harvard.edu/political-economy-of-ai-essay-collection/">The Political Economy of AI</a></li>
             <!-- <li><a href="https://www.computerenhance.com/p/table-of-contents">Computer, Enhance</a> (thank you <a href="https://csci.williams.edu/people/faculty/james-bern/" class="blue">Jim Bern</a>)</li> FRAUD until I've fr read/worked through it -->
             <li><a href="https://learnxinyminutes.com/">Learn X in Y Minutes</a></li>
@@ -70,7 +71,7 @@
             <li><a href="https://preshing.com/20121026/1mb-sorting-explained/">1mb Sorting</a></li>
             <li><a href="https://onlinelibrary.wiley.com/doi/epdf/10.1207/s15516709cog1903_1">How a Cockpit Remembers Its Speeds</a></li>
             <li><a href="https://aatishb.com/patterncollider/">Pattern Collider</a> (from <a href="https://www.youtube.com/watch?v=-eqdj63nEr4" class="blue">this video</a>)</li>
-            <li><a href="https://matthias-research.github.io/pages/tenMinutePhysics/index.html">Ten Minute Physics</a></li>
+            <!-- <li><a href="https://matthias-research.github.io/pages/tenMinutePhysics/index.html">Ten Minute Physics</a></li> -->
             <li><a href="https://youtu.be/ZkRjihsMdp8">Talented VFX Artists</a></li>
             <li><a href="https://www.matthewsiu.com/local-map">Wikipedia map</a></li>
             <li><a href="https://walzr.com/IMG_0001">Nostalgia farm</a></li>
@@ -78,7 +79,7 @@
     </div>
     <script src="js/tooltip.js"></script>
     <script>
-        addListener('degree-button', 'degree-tooltip', '<p class="tooltip-text">With a planned concentration in cognitive science and an undergraduate thesis.</p>');
+        addListener('degree-button', 'degree-tooltip', '<p class="tooltip-text">Also planning an undergraduate thesis.</p>');
         addListener('phil-button', 'phil-tooltip', '<p class="tooltip-text">There is a fundamental opposition between the discrete and the continuous--in physics, in math, in philosophy. Simplistically, the "natural world" is often thought of as continuous, while the human experience (perhaps most clearly seen by the language that we use to communicate it) seems inexhorably discrete. Computers, like us, are able to provide explanations and analyses for continuous behavior from a discrete viewpoint, and have thus been immensely helpful to scientific understanding. But can quantum information science take us even further? What would a theory of everything even mean?<br><b>TL;DR</b>: I am interested in the metaphysics of continuity.<br><i>Click for an interesting read</i>.</p>');
         addListener('ling-button', 'ling-tooltip', '<p class="tooltip-text">Many believe that language is fundamental to humanity, and until only a few years ago, it was thought that language would be near-impossible for computers to work with. But it isn\'t impossible. It\'s kinda easy.</p><div class="tooltip-text"><ul style="font-size:0.75em"><li>Does it mean something that language is so simple? Does this prove its critics in the history of literary theory and linguistics right? What might this say about the limits of our consciousness?</li><li>What else is that easy? How much stuff can we just encode in vectors?</li></ul></div>');
         addListener('tdmc-button', 'tdmc-tooltip', '<p class="tooltip-text">Transportation demand management: responsible for creating effective transportation solutions for contracted institutions.</p>');
