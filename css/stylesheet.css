@@ -48,7 +48,7 @@ body {
 }
 
 .content {
-    border: 2px solid var(--borderblack);
+    /* border: 2px solid var(--borderblack); */
     border-radius: 8px;
     width: 45%;
     max-width: 800px;
@@ -56,18 +56,18 @@ body {
     padding-left: 18px;
     padding-right: 18px;
     margin-bottom: 25px;
-    transition: background-color 0.35s, border-color 0.35s;
+    /* transition: background-color 0.35s, border-color 0.35s; */
 }
 
-.content:hover {
+/* .content:hover {
     background-color: var(--hoverblack);
     border-color: var(--whitetr);
-}
+} */
 
-.light-mode .content:hover {
+/* .light-mode .content:hover {
     background-color: var(--hoverwhite);
     border-color: var(--blacktr);
-}
+} */
 
 p, li {
     font-size: 1.2em;
@@ -124,7 +124,7 @@ a:hover.light-mode-button {
 .light-mode .content {
     background-color: var(--offwhite);
     color: var(--offblack);
-    border: 2px solid var(--borderwhite);
+    /* border: 2px solid var(--borderwhite); */
 }
 
 .light-mode .tooltip {
@@ -149,6 +149,10 @@ a:hover.light-mode-button {
     font-size: 1em;
     margin-top: 0px;
     margin-bottom: 0px;
+}
+
+h1 {
+    text-decoration: underline;
 }
 
 .tooltip {
