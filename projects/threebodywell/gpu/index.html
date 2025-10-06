@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <title>three-body well</title>
+</head>
+<nav></nav>
+<script src="/js/lightmode.js"></script>
+<body>
+    <div class="content">
+        <h1 style="text-align:center">Three-Body Well</h1>
+        <p style="text-align:center">
+            <a href="https://youtu.be/LavXSS5Xtbg" target="_blank" class="blue">(inspo)</a>,
+            <a href="/projects/threebodywell/cpu" class="blue">(CPU Version)</a>
+        </p>
+        <p style="font-size:80%">On Linux, I had to run <code>google-chrome --enable-unsafe-webgpu --enable-features=Vulkan,UseSkiaRenderer</code> with <br><code>chrome://flags/#enable-webgpu-developer-features</code> to get this to work</p>
+        <div style="text-align:center; margin:20px 0;">
+            <label>Steps: <input type="number" id="maxSteps" value="300" min="100" max="1000" step="50" style="width:60px;"> (100-1000)</label>
+            <label style="margin-left:20px;">Capture: <input type="number" id="captureDistance" value="0.2" min="0.05" max="0.5" step="0.05" style="width:60px;"> (0.05-0.5)</label>
+            <label style="margin-left:20px;">dt: <input type="number" id="timeStep" value="0.02" min="0.005" max="0.05" step="0.005" style="width:60px;"> (0.005-0.05)</label><br>
+            <label style="margin-top:10px; display:inline-block;">Drag: <input type="number" id="drag" value="0.0" min="0.0" max="0.1" step="0.01" style="width:60px;"> (0.0-0.1)</label>
+            <button id="applySettings" style="margin-top:10px; padding:5px 15px;">Apply</button>
+        </div>
+    </div>
+    <div style="position:relative; display:inline-block; border:2px solid; margin-bottom:25px;">
+    <canvas id="sim"></canvas>
+    <canvas id="overlay" style="position:absolute; top:0; left:0; pointer-events:none;"></canvas>
+</div>
+    <script>
+        const canvas = document.getElementById('sim');
+        const overlayCanvas = document.getElementById('overlay');
+        const overlayCtx = overlayCanvas.getContext('2d', { willReadFrequently: true });
+
+        // param uutils
+        let simParams = {
+            maxSteps: 300,
+            captureDistance: 0.2,
+            trajectoryDt: 0.02,
+            drag: 0.0
+        };
+
+        function loadParams() {
+            const saved = localStorage.getItem('threeBodyParams');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    Object.assign(simParams, parsed);
+                } catch (e) {
+                    console.log('Failed to load saved parameters');
+                }
+            }
+        }
+
+        function saveParams() {
+            localStorage.setItem('threeBodyParams', JSON.stringify(simParams));
+        }
+
+        function updateParams() {
+            document.getElementById('maxSteps').value = simParams.maxSteps;
+            document.getElementById('captureDistance').value = simParams.captureDistance;
+            document.getElementById('timeStep').value = simParams.trajectoryDt;
+            document.getElementById('drag').value = simParams.drag;
+        }
+
+        // WebGPU vars
+        let webgpuDevice = null;
+        let webgpuContext = null;
+        let webgpuPipeline = null;
+        let computePipeline = null;
+        let bodyBuffer = null;
+        let uniformBuffer = null;
+        let outputTexture = null;
+
+        // boring webgpu init stuff
+        async function initWebGPU() {
+            if (!navigator.gpu) {
+                alert('WebGPU not supported');
+                return false;
+            }
+
+            try {
+                const adapter = await navigator.gpu.requestAdapter();
+                if (!adapter) {
+                    alert('No WebGPU adapter found');
+                    return false;
+                }
+
+                webgpuDevice = await adapter.requestDevice();
+
+                webgpuContext = canvas.getContext('webgpu');
+                if (!webgpuContext) {
+                    alert('WebGPU context not available');
+                    return false;
+                }
+
+                const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+                webgpuContext.configure({
+                    device: webgpuDevice,
+                    format: presentationFormat,
+                    alphaMode: 'opaque',
+                });
+
+                await createWebGPUPipelines();
+                return true;
+            } catch (error) {
+                console.error('Failed to init WebGPU: ', error);
+                alert('Failed to init WebGPU: ' + error.message);
+                return false;
+            }
+        }
+
+        async function createWebGPUPipelines() {
+            // !!! THE SAUCE !!!
+            const computeShaderCode = `
+                struct Body {
+                    pos: vec2<f32>,
+                    mass: f32,
+                    padding1: f32,
+                    color: vec3<f32>,
+                    padding2: f32,
+                };
+
+                struct Uniforms {
+                    camX: f32,
+                    camY: f32,
+                    scale: f32,
+                    canvasWidth: f32,
+                    canvasHeight: f32,
+                    G: f32,
+                    maxSteps: f32,
+                    captureDistance: f32,
+                    dt: f32,
+                    drag: f32,
+                };
+
+                @group(0) @binding(0) var<uniform> uniforms: Uniforms;
+                @group(0) @binding(1) var<storage, read> bodies: array<Body, 3>;
+                @group(0) @binding(2) var<storage, read_write> output: array<vec4<f32>>;
+
+                // compute acceleration on a test particle
+                fn computeAcceleration(pos: vec2<f32>) -> vec2<f32> {
+                    var acc = vec2<f32>(0.0, 0.0);
+                    let eps2 = 1e-6;
+
+                    for (var i = 0u; i < 3u; i = i + 1u) {
+                        let dx = bodies[i].pos.x - pos.x;
+                        let dy = bodies[i].pos.y - pos.y;
+                        let r2 = dx * dx + dy * dy + eps2;
+                        let invR3 = pow(r2, -1.5);
+                        let f = uniforms.G * bodies[i].mass * invR3;
+                        acc.x += f * dx;
+                        acc.y += f * dy;
+                    }
+                    return acc;
+                }
+
+                @compute @workgroup_size(8, 8)
+                fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+                    let x = global_id.x;
+                    let y = global_id.y;
+
+                    if (x >= u32(uniforms.canvasWidth) || y >= u32(uniforms.canvasHeight)) {
+                        return;
+                    }
+
+                    let cx = uniforms.canvasWidth * 0.5;
+                    let cy = uniforms.canvasHeight * 0.5;
+
+                    // initial pos with 0 velocity
+                    var pos = vec2<f32>(
+                        uniforms.camX + (f32(x) - cx) / uniforms.scale,
+                        uniforms.camY + (cy - f32(y)) / uniforms.scale
+                    );
+                    var vel = vec2<f32>(0.0, 0.0);
+
+                    var finalBodyIdx = 0u;
+                    var captured = false;
+                    let maxSteps = u32(uniforms.maxSteps);
+                    let captureDist = uniforms.captureDistance;
+
+                    // trace trajectory
+                    for (var step = 0u; step < maxSteps && !captured; step = step + 1u) {
+                        // integrate motion of bodies
+                        let acc0 = computeAcceleration(pos);
+                        let dragAcc0 = -uniforms.drag * vel; // with drag
+
+                        pos.x += vel.x * uniforms.dt + 0.5 * (acc0.x + dragAcc0.x) * uniforms.dt * uniforms.dt;
+                        pos.y += vel.y * uniforms.dt + 0.5 * (acc0.y + dragAcc0.y) * uniforms.dt * uniforms.dt;
+
+                        let acc1 = computeAcceleration(pos);
+                        let dragAcc1 = -uniforms.drag * vel; // with drag
+
+                        vel.x += 0.5 * (acc0.x + acc1.x + dragAcc0.x + dragAcc1.x) * uniforms.dt;
+                        vel.y += 0.5 * (acc0.y + acc1.y + dragAcc0.y + dragAcc1.y) * uniforms.dt;
+
+                        // escape early if "captured" by any body (too close)
+                        var minDist = 999.0;
+                        for (var i = 0u; i < 3u; i = i + 1u) {
+                            let dx = pos.x - bodies[i].pos.x;
+                            let dy = pos.y - bodies[i].pos.y;
+                            let dist = sqrt(dx * dx + dy * dy);
+
+                            if (dist < captureDist) {
+                                finalBodyIdx = i;
+                                captured = true;
+                                break;
+                            }
+                            if (dist < minDist) {
+                                minDist = dist;
+                                finalBodyIdx = i;
+                            }
+                        }
+
+                        // OOB (just assume nearest body for laziness)
+                        if (abs(pos.x) > 10.0 || abs(pos.y) > 10.0) {
+                            captured = true;
+                        }
+                    }
+
+                    let color = bodies[finalBodyIdx].color;
+                    let index = y * u32(uniforms.canvasWidth) + x;
+                    output[index] = vec4<f32>(color, 1.0);
+                }
+            `;
+            // !!! END SAUCE !!!
+
+            // vertex shader for rendering
+            const vertexShaderCode = `
+                @vertex
+                fn main(@builtin(vertex_index) vertexIndex: u32) -> @builtin(position) vec4<f32> {
+                    let pos = array<vec2<f32>, 6>(
+                        vec2<f32>(-1.0, -1.0),
+                        vec2<f32>( 1.0, -1.0),
+                        vec2<f32>(-1.0,  1.0),
+                        vec2<f32>(-1.0,  1.0),
+                        vec2<f32>( 1.0, -1.0),
+                        vec2<f32>( 1.0,  1.0)
+                    );
+                    return vec4<f32>(pos[vertexIndex], 0.0, 1.0);
+                }
+            `;
+
+            // fragment shader for rendering
+            const fragmentShaderCode = `
+                struct Uniforms {
+                    camX: f32,
+                    camY: f32,
+                    scale: f32,
+                    canvasWidth: f32,
+                    canvasHeight: f32,
+                    G: f32,
+                    maxSteps: f32,
+                    captureDistance: f32,
+                    dt: f32,
+                    drag: f32,
+                };
+
+                @group(0) @binding(0) var<storage, read> output: array<vec4<f32>>;
+                @group(0) @binding(1) var<uniform> uniforms: Uniforms;
+
+                @fragment
+                fn main(@builtin(position) fragCoord: vec4<f32>) -> @location(0) vec4<f32> {
+                    let x = u32(fragCoord.x);
+                    let y = u32(fragCoord.y);
+                    let index = y * u32(uniforms.canvasWidth) + x;
+                    return output[index];
+                }
+            `;
+
+            // more boring webgpu stuff
+            // pipeline setup
+            const computeShader = webgpuDevice.createShaderModule({
+                code: computeShaderCode
+            });
+            const vertexShader = webgpuDevice.createShaderModule({
+                code: vertexShaderCode
+            });
+            const fragmentShader = webgpuDevice.createShaderModule({
+                code: fragmentShaderCode
+            });
+
+            computePipeline = webgpuDevice.createComputePipeline({
+                layout: 'auto',
+                compute: {
+                    module: computeShader,
+                    entryPoint: 'main',
+                },
+            });
+
+            webgpuPipeline = webgpuDevice.createRenderPipeline({
+                layout: 'auto',
+                vertex: {
+                    module: vertexShader,
+                    entryPoint: 'main',
+                },
+                fragment: {
+                    module: fragmentShader,
+                    entryPoint: 'main',
+                    targets: [{
+                        format: navigator.gpu.getPreferredCanvasFormat(),
+                    }],
+                },
+                primitive: {
+                    topology: 'triangle-list',
+                },
+            });
+
+            return true;
+        }
+
+        canvas.width = Math.floor(window.innerWidth * 0.95);
+        canvas.height = Math.floor(window.innerHeight * 0.8);
+        overlayCanvas.width = canvas.width;
+        overlayCanvas.height = canvas.height;
+
+        const containerWidth = Math.min(canvas.width, window.innerWidth * 0.95);
+        const containerHeight = Math.min(canvas.height, window.innerHeight * 0.8);
+        canvas.style.width = containerWidth + 'px';
+        canvas.style.height = containerHeight + 'px';
+        overlayCanvas.style.width = containerWidth + 'px';
+        overlayCanvas.style.height = containerHeight + 'px';
+
+        let camX = 0, camY = 0;
+        let simWidth = 4; // world units
+        function computeScale() {
+            return Math.min(canvas.width, canvas.height) / simWidth;
+        }
+        function cX(x) { return canvas.width * 0.5 + (x - camX) * computeScale(); }
+        function cY(y) { return canvas.height * 0.5 - (y - camY) * computeScale(); }
+
+        const G = 1.0;
+        const bodies = [
+            { pos: {x: -0.8, y: 0.0}, vel: {x: 0, y: 0}, mass: 1, radius: 10, color: '#ff5555' },
+            { pos: {x: 0.8, y: 0.0},  vel: {x: 0, y: 0}, mass: 1, radius: 10, color: '#55aaff' },
+            { pos: {x: 0.0, y: 0.8},  vel: {x: 0, y: 0}, mass: 1, radius: 10, color: '#ffee55' },
+        ];
+
+        // gpu buffers
+        function setupGPUBuffers() {
+            if (!webgpuDevice) return;
+
+            if (bodyBuffer) bodyBuffer.destroy();
+            if (uniformBuffer) uniformBuffer.destroy();
+
+            // body buffer
+            // [position, mass, color]
+            // 8 float alignment: pos<2> + mass<1> + padding<1> + color<3> + padding<1>
+            const bodyData = new Float32Array(3 * 8); // 3 bodies * 8 floats/body
+            for (let i = 0; i < 3; i++) {
+                const baseIndex = i * 8;
+                bodyData[baseIndex] = bodies[i].pos.x;
+                bodyData[baseIndex + 1] = bodies[i].pos.y;
+                bodyData[baseIndex + 2] = bodies[i].mass;
+                bodyData[baseIndex + 3] = 0; // padding
+
+                // hex2rgb
+                const col = bodies[i].color;
+                const r = parseInt(col.slice(1,3), 16) / 255;
+                const g = parseInt(col.slice(3,5), 16) / 255;
+                const b = parseInt(col.slice(5,7), 16) / 255;
+
+                bodyData[baseIndex + 4] = r;
+                bodyData[baseIndex + 5] = g;
+                bodyData[baseIndex + 6] = b;
+                bodyData[baseIndex + 7] = 0; // padding
+            }
+
+            bodyBuffer = webgpuDevice.createBuffer({
+                size: bodyData.byteLength,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+            });
+            webgpuDevice.queue.writeBuffer(bodyBuffer, 0, bodyData);
+
+            // uniform buffer
+            //  -------------rendering------------     | G |     ----------params----------
+            // [camX, camY, zoom, canvWidth, canvHeight, G, maxSteps, captureDist, dt, drag]
+            // 12 vals * 4 bytes per val (12 for roundness, really 10 used)
+            uniformBuffer = webgpuDevice.createBuffer({
+                size: 12 * 4,
+                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            });
+
+            // output texture buffer
+            // width * height * [r, g, b, a] * 4 bytes per val
+            const outputSize = canvas.width * canvas.height * 4 * 4;
+            if (outputTexture) {
+                outputTexture.destroy();
+            }
+            outputTexture = webgpuDevice.createBuffer({
+                size: outputSize,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+            });
+        }
+
+        function updateUniforms() {
+            if (!uniformBuffer || !webgpuDevice) return;
+
+            const uniformData = new Float32Array(12);
+            uniformData[0] = camX;
+            uniformData[1] = camY;
+            uniformData[2] = computeScale();
+            uniformData[3] = canvas.width;
+            uniformData[4] = canvas.height;
+            uniformData[5] = G;
+            uniformData[6] = simParams.maxSteps;
+            uniformData[7] = simParams.captureDistance;
+            uniformData[8] = simParams.trajectoryDt;
+            uniformData[9] = simParams.drag;
+            uniformData[10] = 0; // padding
+            uniformData[11] = 0; // padding
+
+            webgpuDevice.queue.writeBuffer(uniformBuffer, 0, uniformData);
+        }
+
+        function updateBodyBuffer() {
+            if (!bodyBuffer || !webgpuDevice) return;
+
+            const bodyData = new Float32Array(3 * 8); // 3 bodies * 8 floats per body
+            for (let i = 0; i < 3; i++) {
+                const baseIndex = i * 8;
+                bodyData[baseIndex] = bodies[i].pos.x;
+                bodyData[baseIndex + 1] = bodies[i].pos.y;
+                bodyData[baseIndex + 2] = bodies[i].mass;
+                bodyData[baseIndex + 3] = 0; // padding
+
+                const col = bodies[i].color;
+                const r = parseInt(col.slice(1,3), 16) / 255;
+                const g = parseInt(col.slice(3,5), 16) / 255;
+                const b = parseInt(col.slice(5,7), 16) / 255;
+
+                bodyData[baseIndex + 4] = r;
+                bodyData[baseIndex + 5] = g;
+                bodyData[baseIndex + 6] = b;
+                bodyData[baseIndex + 7] = 0; // padding
+            }
+            webgpuDevice.queue.writeBuffer(bodyBuffer, 0, bodyData);
+        }
+
+        // randomize initial masses and velocities
+        function randRange(min, max) { return min + Math.random() * (max - min); }
+        function randomizeBodies() {
+            for (const b of bodies) {
+                b.mass = randRange(0.4, 1.6);
+                b.vel.x = randRange(-1, 1);
+                b.vel.y = randRange(-1, 1);
+            }
+        }
+
+        // well coloring
+        function renderWells() {
+            if (!webgpuDevice || !computePipeline || !webgpuPipeline) {
+                return false;
+            }
+
+            if (!bodyBuffer || !uniformBuffer || !outputTexture) {
+                setupGPUBuffers();
+            }
+
+            updateUniforms();
+            updateBodyBuffer();
+
+            // more boring webgpu infra
+            const computeBindGroup = webgpuDevice.createBindGroup({
+                layout: computePipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: { buffer: uniformBuffer } },
+                    { binding: 1, resource: { buffer: bodyBuffer } },
+                    { binding: 2, resource: { buffer: outputTexture } },
+                ],
+            });
+
+            const renderBindGroup = webgpuDevice.createBindGroup({
+                layout: webgpuPipeline.getBindGroupLayout(0),
+                entries: [
+                    { binding: 0, resource: { buffer: outputTexture } },
+                    { binding: 1, resource: { buffer: uniformBuffer } },
+                ],
+            });
+
+            const commandEncoder = webgpuDevice.createCommandEncoder();
+
+            // compute
+            const computePass = commandEncoder.beginComputePass();
+            computePass.setPipeline(computePipeline);
+            computePass.setBindGroup(0, computeBindGroup);
+            computePass.dispatchWorkgroups(
+                Math.ceil(canvas.width / 8),
+                Math.ceil(canvas.height / 8)
+            );
+            computePass.end();
+
+            // grab texture
+            const textureView = webgpuContext.getCurrentTexture().createView();
+
+            // render
+            const renderPass = commandEncoder.beginRenderPass({
+                colorAttachments: [{
+                    view: textureView,
+                    clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                    loadOp: 'clear',
+                    storeOp: 'store',
+                }],
+            });
+            renderPass.setPipeline(webgpuPipeline);
+            renderPass.setBindGroup(0, renderBindGroup);
+            renderPass.draw(6);
+            renderPass.end();
+
+            // queue
+            webgpuDevice.queue.submit([commandEncoder.finish()]);
+
+            // draw
+            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            for (const b of bodies) {
+                const sx = cX(b.pos.x);
+                const sy = cY(b.pos.y);
+                overlayCtx.beginPath();
+                overlayCtx.fillStyle = '#000000';
+                overlayCtx.arc(sx, sy, Math.max(6, b.radius + 2), 0, Math.PI * 2);
+                overlayCtx.fill();
+                overlayCtx.beginPath();
+                overlayCtx.fillStyle = b.color;
+                overlayCtx.arc(sx, sy, Math.max(4, b.radius), 0, Math.PI * 2);
+                overlayCtx.fill();
+            }
+
+            return true;
+        }
+
+        // integrate motion of bodies
+        function computeAccelerations(state) {
+            const acc = state.map(() => ({x:0, y:0}));
+            for (let i = 0; i < state.length; i++) {
+                for (let j = i + 1; j < state.length; j++) {
+                    const dx = state[j].pos.x - state[i].pos.x;
+                    const dy = state[j].pos.y - state[i].pos.y;
+                    const r2 = dx*dx + dy*dy + 1e-6;
+                    const invR = 1/Math.sqrt(r2);
+                    const invR3 = invR*invR*invR;
+                    const f = G * state[i].mass * state[j].mass * invR3;
+                    const fx = f * dx;
+                    const fy = f * dy;
+                    acc[i].x += fx / state[i].mass;
+                    acc[i].y += fy / state[i].mass;
+                    acc[j].x -= fx / state[j].mass;
+                    acc[j].y -= fy / state[j].mass;
+                }
+            }
+            return acc;
+        }
+
+        let dt = 1/240;
+        function step() {
+            const acc0 = computeAccelerations(bodies);
+            for (let i = 0; i < bodies.length; i++) {
+                bodies[i].pos.x += bodies[i].vel.x * dt + 0.5 * acc0[i].x * dt*dt;
+                bodies[i].pos.y += bodies[i].vel.y * dt + 0.5 * acc0[i].y * dt*dt;
+            }
+            const acc1 = computeAccelerations(bodies);
+            for (let i = 0; i < bodies.length; i++) {
+                bodies[i].vel.x += 0.5 * (acc0[i].x + acc1[i].x) * dt;
+                bodies[i].vel.y += 0.5 * (acc0[i].y + acc1[i].y) * dt;
+            }
+
+            // bounce off world edges
+            const scale = computeScale();
+            const halfW = (canvas.width * 0.5) / scale;
+            const halfH = (canvas.height * 0.5) / scale;
+            const minX = camX - halfW;
+            const maxX = camX + halfW;
+            const minY = camY - halfH;
+            const maxY = camY + halfH;
+
+            for (let i = 0; i < bodies.length; i++) {
+                const b = bodies[i];
+                const rPx = Math.max(4, b.radius);
+                const rW = rPx / scale;
+
+                if (b.pos.x > maxX - rW) {
+                    b.pos.x = maxX - rW;
+                    if (b.vel.x > 0) b.vel.x = -b.vel.x * 0.95;
+                } else if (b.pos.x < minX + rW) {
+                    b.pos.x = minX + rW;
+                    if (b.vel.x < 0) b.vel.x = -b.vel.x * 0.95;
+                }
+
+                if (b.pos.y > maxY - rW) {
+                    b.pos.y = maxY - rW;
+                    if (b.vel.y > 0) b.vel.y = -b.vel.y * 0.95;
+                } else if (b.pos.y < minY + rW) {
+                    b.pos.y = minY + rW;
+                    if (b.vel.y < 0) b.vel.y = -b.vel.y * 0.95;
+                }
+            }
+        }
+
+        
+        // animation loop
+        let lastTime = performance.now();
+        function animate(t) {
+            const fps = 1/60;
+            let frameDt = Math.min(fps, Math.max(0.001, (t - lastTime) / 1000));
+            lastTime = t;
+            let acc = frameDt;
+            while (acc >= dt) { step(); acc -= dt; }
+            renderWells();
+            requestAnimationFrame(animate);
+        }
+
+        document.getElementById('applySettings').addEventListener('click', async () => {
+            simParams.maxSteps = parseInt(document.getElementById('maxSteps').value);
+            simParams.captureDistance = parseFloat(document.getElementById('captureDistance').value);
+            simParams.trajectoryDt = parseFloat(document.getElementById('timeStep').value);
+            simParams.drag = parseFloat(document.getElementById('drag').value);
+
+            saveParams();
+
+            setupGPUBuffers();
+        });
+
+        async function start() {
+            loadParams();
+            updateParams();
+
+            const success = await initWebGPU();
+            if (!success) {
+                return;
+            }
+            randomizeBodies();
+            renderWells();
+            requestAnimationFrame(animate);
+        }
+
+        start();
+    </script>
+</body>
+</html>

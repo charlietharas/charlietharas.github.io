@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <title>three-body well</title>
+</head>
+<nav></nav>
+<script src="/js/lightmode.js"></script>
+<body>
+    <div class="content">
+        <h1 style="text-align:center">Three-Body Well</h1>
+        <p style="text-align:center">
+            <a href="https://youtu.be/LavXSS5Xtbg" target="_blank" class="blue">(inspo)</a>, 
+            <a href="/projects/threebodywell/gpu" class="blue">(WebGPU Version)</a>
+        </p>
+    </div>
+    <canvas id="sim" style="border:2px solid; margin-bottom:25px;"></canvas>
+    <div class="content" id="body-info" style="width:45%;max-width:800px;font-size:0.95em"></div>
+    <script>
+        const canvas = document.getElementById('sim');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        canvas.width = Math.floor(window.innerWidth * 0.95);
+        canvas.height = Math.floor(window.innerHeight * 0.8);
+
+        let camX = 0, camY = 0;
+        let simWidth = 4; // world units
+        function computeScale() {
+            return Math.min(canvas.width, canvas.height) / simWidth;
+        }
+        function cX(x) { return canvas.width * 0.5 + (x - camX) * computeScale(); }
+        function cY(y) { return canvas.height * 0.5 - (y - camY) * computeScale(); }
+
+        const G = 1.0;
+        const bodies = [
+            { pos: {x: -0.8, y: 0.0}, vel: {x: 0, y: 0}, mass: 1, radius: 10, color: '#ff5555' },
+            { pos: {x: 0.8, y: 0.0},  vel: {x: 0, y: 0}, mass: 1, radius: 10, color: '#55aaff' },
+            { pos: {x: 0.0, y: 0.8},  vel: {x: 0, y: 0}, mass: 1, radius: 10, color: '#ffee55' },
+        ];
+
+        
+        // randomize initial masses and velocities
+        function randRange(min, max) { return min + Math.random() * (max - min); }
+        function randomizeBodies() {
+            for (const b of bodies) {
+                b.mass = randRange(0.4, 1.6);
+                b.vel.x = randRange(-1, 1);
+                b.vel.y = randRange(-1, 1);
+            }
+        }
+
+        // well coloring
+        function renderWells() {
+            const scale = computeScale();
+            const cx = canvas.width * 0.5;
+            const cy = canvas.height * 0.5;
+            const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = id.data;
+            const eps2 = 1e-6;
+            for (let y = 0; y < canvas.height; y++) {
+                const wy = camY + (cy - y) / scale;
+                let p = 4 * y * canvas.width;
+                for (let x = 0; x < canvas.width; x++) {
+                    const wx = camX + (x - cx) / scale;
+                    let bestIdx = 0;
+                    let bestA = -Infinity;
+                    for (let i = 0; i < bodies.length; i++) {
+                        const dx = wx - bodies[i].pos.x;
+                        const dy = wy - bodies[i].pos.y;
+                        const r2 = dx*dx + dy*dy + eps2;
+                        const a = G * bodies[i].mass / r2;
+                        if (a > bestA) { bestA = a; bestIdx = i; }
+                    }
+                    const col = bodies[bestIdx].color;
+                    const r = parseInt(col.slice(1,3), 16);
+                    const g = parseInt(col.slice(3,5), 16);
+                    const b = parseInt(col.slice(5,7), 16);
+                    data[p++] = r;
+                    data[p++] = g;
+                    data[p++] = b;
+                    data[p++] = 255;
+                }
+            }
+            ctx.putImageData(id, 0, 0);
+            // overlay bodies
+            for (const b of bodies) {
+                const sx = cX(b.pos.x);
+                const sy = cY(b.pos.y);
+                ctx.beginPath();
+                ctx.fillStyle = '#000000';
+                ctx.arc(sx, sy, Math.max(6, b.radius + 2), 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.fillStyle = b.color;
+                ctx.arc(sx, sy, Math.max(4, b.radius), 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // integrate motion of bodies
+        function computeAccelerations(state) {
+            const acc = state.map(() => ({x:0, y:0}));
+            for (let i = 0; i < state.length; i++) {
+                for (let j = i + 1; j < state.length; j++) {
+                    const dx = state[j].pos.x - state[i].pos.x;
+                    const dy = state[j].pos.y - state[i].pos.y;
+                    const r2 = dx*dx + dy*dy + 1e-6;
+                    const invR = 1/Math.sqrt(r2);
+                    const invR3 = invR*invR*invR;
+                    const f = G * state[i].mass * state[j].mass * invR3;
+                    const fx = f * dx;
+                    const fy = f * dy;
+                    acc[i].x += fx / state[i].mass;
+                    acc[i].y += fy / state[i].mass;
+                    acc[j].x -= fx / state[j].mass;
+                    acc[j].y -= fy / state[j].mass;
+                }
+            }
+            return acc;
+        }
+
+        let dt = 1/240;
+        function step() {
+            const acc0 = computeAccelerations(bodies);
+            for (let i = 0; i < bodies.length; i++) {
+                bodies[i].pos.x += bodies[i].vel.x * dt + 0.5 * acc0[i].x * dt*dt;
+                bodies[i].pos.y += bodies[i].vel.y * dt + 0.5 * acc0[i].y * dt*dt;
+            }
+            const acc1 = computeAccelerations(bodies);
+            for (let i = 0; i < bodies.length; i++) {
+                bodies[i].vel.x += 0.5 * (acc0[i].x + acc1[i].x) * dt;
+                bodies[i].vel.y += 0.5 * (acc0[i].y + acc1[i].y) * dt;
+            }
+
+            // bounce off world edges
+            const scale = computeScale();
+            const halfW = (canvas.width * 0.5) / scale;
+            const halfH = (canvas.height * 0.5) / scale;
+            const minX = camX - halfW;
+            const maxX = camX + halfW;
+            const minY = camY - halfH;
+            const maxY = camY + halfH;
+
+            for (let i = 0; i < bodies.length; i++) {
+                const b = bodies[i];
+                const rPx = Math.max(4, b.radius);
+                const rW = rPx / scale;
+
+                if (b.pos.x > maxX - rW) {
+                    b.pos.x = maxX - rW;
+                    if (b.vel.x > 0) b.vel.x = -b.vel.x * 0.95;
+                } else if (b.pos.x < minX + rW) {
+                    b.pos.x = minX + rW;
+                    if (b.vel.x < 0) b.vel.x = -b.vel.x * 0.95;
+                }
+
+                if (b.pos.y > maxY - rW) {
+                    b.pos.y = maxY - rW;
+                    if (b.vel.y > 0) b.vel.y = -b.vel.y * 0.95;
+                } else if (b.pos.y < minY + rW) {
+                    b.pos.y = minY + rW;
+                    if (b.vel.y < 0) b.vel.y = -b.vel.y * 0.95;
+                }
+            }
+        }
+
+        // animation loop
+        let lastTime = performance.now();
+        function animate(t) {
+            const fps = 1/30;
+            let frameDt = Math.min(fps, Math.max(0.001, (t - lastTime) / 1000));
+            lastTime = t;
+            let acc = frameDt;
+            while (acc >= dt) { step(); acc -= dt; }
+            renderWells();
+            requestAnimationFrame(animate);
+        }
+
+        // start
+        randomizeBodies();
+        renderWells();
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
+
+
