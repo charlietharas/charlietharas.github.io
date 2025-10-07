@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <title>metaballs</title>
+</head>
+<nav></nav>
+<script src="/js/lightmode.js"></script>
+<body>
+    <div id="content">
+        <h1>metaballs</h1>
+        <p style="text-align:center"><a href="https://youtu.be/6oMZb3yP_H8" target="_blank" class="blue">(inspo)</a></p>
+    </div>
+    <canvas id="sim" style="border:2px solid; margin-bottom:25px;">
+        <script>
+            var canvas = document.getElementById("sim");
+            var c = canvas.getContext("2d", { willReadFrequently: true });
+
+            var gridSize = 8; // !!!
+            var gridWidth, gridHeight;
+
+            canvas.width = Math.floor(window.innerWidth * 0.95);
+            canvas.height = Math.floor(window.innerHeight * 0.8);
+
+            gridWidth = Math.ceil(canvas.width / gridSize);
+            gridHeight = Math.ceil(canvas.height / gridSize);
+
+            function randrange(min, max) {
+                return Math.floor(Math.random() * (max - min)) + min;
+            }
+
+            // create metaballs
+            function createMetaball() {
+                const radius = randrange(60, 150);
+                return {
+                    x: randrange(radius, canvas.width - radius),
+                    y: randrange(radius, canvas.height - radius),
+                    vx: randrange(-4, 4),
+                    vy: randrange(-4, 4),
+                    radius: radius,
+                    color: `hsl(${Math.floor(Math.random() * 360)}, 80%, 60%)`
+                };
+            }
+
+            var metaballs = [];
+            for (let i = 0; i < Math.floor(randrange(3, 7)); i++) {
+                metaballs.push(createMetaball());
+            }
+
+            // compute influence field
+            function influenceFieldAt(x, y) {
+                let totalField = 0;
+                let maxInfluence = 0;
+                let dominantColor = null;
+
+                for (let metaball of metaballs) {
+                    const dx = x - metaball.x;
+                    const dy = y - metaball.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance <= metaball.radius) {
+                        const fieldStrength = metaball.radius * Math.pow(1 - (distance / metaball.radius), 2);
+                        totalField += fieldStrength;
+
+                        if (fieldStrength > maxInfluence) {
+                            maxInfluence = fieldStrength;
+                            dominantColor = metaball.color;
+                        }
+                    }
+                }
+
+                return { totalField, dominantColor };
+            }
+
+            // draw influence field for debugging
+            // also it looks cool
+            function drawInfluenceField() {
+                for (let x = 0; x < gridWidth; x++) {
+                    for (let y = 0; y < gridHeight; y++) {
+                        const fieldPoint = influenceFieldAt(x * gridSize, y * gridSize);
+                        const totalStrength = metaballs.reduce((sum, m) => sum + m.radius, 0);
+                        const normalizedValue = Math.min(1, fieldPoint.totalField / totalStrength);
+                        const intensity = Math.floor(normalizedValue * 255);
+
+                        if (fieldPoint.dominantColor) {
+                            c.fillStyle = fieldPoint.dominantColor;
+                            c.globalAlpha = normalizedValue * 0.6;
+                            c.fillRect(x * gridSize, y * gridSize, gridSize, gridSize);
+                            c.globalAlpha = 1;
+                        }
+                    }
+                }
+            }
+
+            // draw grid for debugging
+            function drawGrid() {
+                c.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                c.lineWidth = 1;
+
+                // verticals
+                for (let x = 0; x <= gridWidth; x++) {
+                    c.beginPath();
+                    c.moveTo(x * gridSize, 0);
+                    c.lineTo(x * gridSize, gridHeight * gridSize);
+                    c.stroke();
+                }
+
+                // horizontals
+                for (let y = 0; y <= gridHeight; y++) {
+                    c.beginPath();
+                    c.moveTo(0, y * gridSize);
+                    c.lineTo(gridWidth * gridSize, y * gridSize);
+                    c.stroke();
+                }
+            }
+
+            // number for a cell determining its 16 possible configurations
+            // where each bit represents the presence of a metaball in the corner
+            function msConf(topLeft, topRight, bottomLeft, bottomRight, thresh) {
+                let conf = 0;
+                if (topLeft > thresh) conf |= 8; // 0b1000
+                if (topRight > thresh) conf |= 4; // 0b0100
+                if (bottomRight > thresh) conf |= 2; // 0b0010
+                if (bottomLeft > thresh) conf |= 1; // 0b0001
+                return conf;
+            }
+
+            // lookup table defines which edges to draw lines on
+            // for each configuration generated by msConf
+            // [L, R, T, B]
+            const marchingSquaresEdges = [
+                [0, 0, 0, 0],
+                [0, 0, 0, 1],
+                [0, 1, 0, 0],
+                [0, 1, 0, 1],
+                [0, 0, 1, 0],
+                [0, 0, 1, 1],
+                [0, 1, 1, 0],
+                [0, 1, 1, 1],
+                [1, 0, 0, 0],
+                [1, 0, 0, 1],
+                [1, 1, 0, 0],
+                [1, 1, 0, 1],
+                [1, 0, 1, 0],
+                [1, 0, 1, 1],
+                [1, 1, 1, 0],
+                [0, 0, 0, 0]
+            ];
+
+            // utilz
+            function getSquarePositions(cellX, cellY) {
+                const leftX = cellX * gridSize;
+                const rightX = (cellX + 1) * gridSize;
+                const topY = cellY * gridSize;
+                const bottomY = (cellY + 1) * gridSize;
+
+                return { leftX, rightX, topY, bottomY };
+            }
+
+            function getSquareValues(leftX, rightX, topY, bottomY) {
+                const [tlv, trv, blv, brv] = [influenceFieldAt(leftX, topY).totalField, influenceFieldAt(rightX, topY).totalField, influenceFieldAt(leftX, bottomY).totalField, influenceFieldAt(rightX, bottomY).totalField];
+
+                return { tlv, trv, blv, brv };
+            }
+
+            function lerp(p1, p2, v1, v2, thresh) {
+                if (v2 == v1) return ((p1 + p2) / 2);
+                return p1 + (thresh - v1) * (p2 - p1) / (v2 - v1);
+            }
+
+            // FPS throttling
+            const targetFPS = 60;
+            const frameDelay = 1000 / targetFPS;
+            let lastFrameTime = 0;
+
+            // draw a single cell by lerping with influence field values
+            function drawMarchingSquaresCell(cellX, cellY, config, thresh) {
+                const { leftX, rightX, topY, bottomY } = getSquarePositions(cellX, cellY);
+                const { tlv, trv, blv, brv } = getSquareValues(leftX, rightX, topY, bottomY);
+
+                const cellCenter = influenceFieldAt((leftX + rightX) / 2, (topY + bottomY) / 2);
+
+                // midpoints on each edge where the iso threshold crosses
+                const leftMid  = { x: leftX,  y: lerp(topY,    bottomY, tlv, blv, thresh) };
+                const rightMid = { x: rightX, y: lerp(topY,    bottomY, trv, brv, thresh) };
+                const topMid   = { x: lerp(leftX, rightX, tlv, trv, thresh), y: topY };
+                const botMid   = { x: lerp(leftX, rightX, blv, brv, thresh), y: bottomY };
+
+                function seg(p, q) {
+                    c.moveTo(p.x, p.y);
+                    c.lineTo(q.x, q.y);
+                }
+
+                c.strokeStyle = cellCenter.dominantColor || 'white';
+                c.lineWidth = 2;
+                c.beginPath();
+
+                switch (config) {
+                    case 1:   // BL
+                        seg(leftMid, botMid);
+                        break;
+                    case 2:   // BR
+                        seg(botMid, rightMid);
+                        break;
+                    case 3:   // BL + BR
+                        seg(leftMid, rightMid);
+                        break;
+                    case 4:   // TR
+                        seg(topMid, rightMid);
+                        break;
+                    case 5:   // TR + BL (saddle) -> two segments
+                        seg(topMid, leftMid);
+                        seg(botMid, rightMid);
+                        break;
+                    case 6:   // TR + BR
+                        seg(topMid, botMid);
+                        break;
+                    case 7:   // TR + BR + BL
+                        seg(topMid, leftMid);
+                        break;
+                    case 8:   // TL
+                        seg(leftMid, topMid);
+                        break;
+                    case 9:   // TL + BL
+                        seg(topMid, botMid);
+                        break;
+                    case 10:  // TL + BR (saddle) -> two segments
+                        seg(topMid, rightMid);
+                        seg(leftMid, botMid);
+                        break;
+                    case 11:  // TL + BR + BL
+                        seg(topMid, rightMid);
+                        break;
+                    case 12:  // TL + TR
+                        seg(leftMid, rightMid);
+                        break;
+                    case 13:  // TL + TR + BL
+                        seg(botMid, rightMid);
+                        break;
+                    case 14:  // TL + TR + BR
+                        seg(leftMid, botMid);
+                        break;
+                }
+
+                c.stroke();
+            }
+
+            // main draw function
+            function drawMarchingSquares(thresh) {
+                for (let x = 0; x < gridWidth - 1; x++) {
+                    for (let y = 0; y < gridHeight - 1; y++) {
+                        const { leftX, rightX, topY, bottomY } = getSquarePositions(x, y);
+                        const { tlv, trv, blv, brv } = getSquareValues(leftX, rightX, topY, bottomY);
+
+                        const config = msConf(tlv, trv, blv, brv, thresh);
+
+                        if (config !== 0 && config !== 15) {
+                            drawMarchingSquaresCell(x, y, config, thresh);
+                        }
+                    }
+                }
+            }
+
+            // animation
+            function moveMetaballs() {
+                for (let metaball of metaballs) {
+                    metaball.x += metaball.vx;
+                    metaball.y += metaball.vy;
+
+                    // visual radius for wall collision
+                    const VIZ_LAMBDA = 0.5;
+                    const visualRadius = metaball.radius * VIZ_LAMBDA;
+
+                    // bounce off walls
+                    if (metaball.x - visualRadius <= 0 || metaball.x + visualRadius >= canvas.width) {
+                        metaball.vx = -metaball.vx;
+                        metaball.x = Math.max(visualRadius, Math.min(canvas.width - visualRadius, metaball.x));
+                    }
+                    if (metaball.y - visualRadius <= 0 || metaball.y + visualRadius >= canvas.height) {
+                        metaball.vy = -metaball.vy;
+                        metaball.y = Math.max(visualRadius, Math.min(canvas.height - visualRadius, metaball.y));
+                    }
+                }
+            }
+
+            var t = 0;
+            function draw(currentTime) {
+                // FPS throttling
+                if (currentTime - lastFrameTime < frameDelay) {
+                    requestAnimationFrame(draw);
+                    return;
+                }
+                lastFrameTime = currentTime;
+
+                c.clearRect(0, 0, canvas.width, canvas.height);
+
+                c.fillStyle = getComputedStyle(document.body).getPropertyValue('--bg') || '#111';
+                c.fillRect(0, 0, canvas.width, canvas.height);
+
+                moveMetaballs();
+                drawGrid();
+                drawInfluenceField();
+
+                // adaptive threshold for drawing (idk I used 10 before and it worked but this seems fine)
+                const avgStrength = metaballs.reduce((sum, m) => sum + m.radius, 0) / metaballs.length;
+                drawMarchingSquares(avgStrength * 0.3);
+
+                requestAnimationFrame(draw);
+            }
+
+            requestAnimationFrame(draw);
+        </script>
+    </canvas>
+</body>
+</html>
+
