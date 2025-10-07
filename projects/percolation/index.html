@@ -39,44 +39,78 @@
             let grid = new Uint32Array(W * H);
             let img = c.createImageData(W, H);
             let pixels = new Uint32Array(img.data.buffer);
+            let clusterSizes = [];
+            let colorCache = [];
             c.imageSmoothingEnabled = false;
+
+            let queue = new Array(Math.max(W, H));
+            let queueHead = 0;
+            let queueTail = 0;
 
             function generateGrid() {
                 grid.fill(0);
+                clusterSizes.length = 0;
                 cellID = 1;
-                const q = [];
-                for (let j = 0; j < H; j++) {
-                    for (let i = 0; i < W; i++) {
-                        const startIdx = j * W + i;
-                        if (grid[startIdx] !== 0) continue;
-                        grid[startIdx] = cellID;
-                        q.length = 0;
-                        q.push(startIdx);
-                        while (q.length > 0) {
-                            const cur = q.pop();
-                            const x = cur % W;
-                            const y = (cur - x) / W;
+
+                const WLocal = W;
+                const HLocal = H;
+                const gridLocal = grid;
+                const PLocal = P;
+
+                for (let j = 0; j < HLocal; j++) {
+                    for (let i = 0; i < WLocal; i++) {
+                        const startIdx = j * WLocal + i;
+                        if (gridLocal[startIdx] !== 0) continue;
+
+                        gridLocal[startIdx] = cellID;
+                        let clusterSize = 1;
+                        queueHead = 0;
+                        queueTail = 0;
+                        queue[queueTail++] = startIdx;
+
+                        while (queueHead < queueTail) {
+                            const cur = queue[queueHead++];
+                            const x = cur % WLocal;
+                            const y = (cur - x) / WLocal;
+
                             // right
-                            if (x + 1 < W) {
+                            if (x + 1 < WLocal) {
                                 const ni = cur + 1;
-                                if (grid[ni] === 0 && Math.random() < P) { grid[ni] = cellID; q.push(ni); }
+                                if (gridLocal[ni] === 0 && Math.random() < PLocal) {
+                                    gridLocal[ni] = cellID;
+                                    queue[queueTail++] = ni;
+                                    clusterSize++;
+                                }
                             }
                             // left
                             if (x - 1 >= 0) {
                                 const ni = cur - 1;
-                                if (grid[ni] === 0 && Math.random() < P) { grid[ni] = cellID; q.push(ni); }
+                                if (gridLocal[ni] === 0 && Math.random() < PLocal) {
+                                    gridLocal[ni] = cellID;
+                                    queue[queueTail++] = ni;
+                                    clusterSize++;
+                                }
                             }
                             // up
                             if (y - 1 >= 0) {
-                                const ni = cur - W;
-                                if (grid[ni] === 0 && Math.random() < P) { grid[ni] = cellID; q.push(ni); }
+                                const ni = cur - WLocal;
+                                if (gridLocal[ni] === 0 && Math.random() < PLocal) {
+                                    gridLocal[ni] = cellID;
+                                    queue[queueTail++] = ni;
+                                    clusterSize++;
+                                }
                             }
                             // down
-                            if (y + 1 < H) {
-                                const ni = cur + W;
-                                if (grid[ni] === 0 && Math.random() < P) { grid[ni] = cellID; q.push(ni); }
+                            if (y + 1 < HLocal) {
+                                const ni = cur + WLocal;
+                                if (gridLocal[ni] === 0 && Math.random() < PLocal) {
+                                    gridLocal[ni] = cellID;
+                                    queue[queueTail++] = ni;
+                                    clusterSize++;
+                                }
                             }
                         }
+                        clusterSizes[cellID] = clusterSize;
                         cellID++;
                     }
                 }
@@ -93,18 +127,68 @@
                 return [f(0), f(8), f(4)];
             }
 
-            function idToColor(id) {
+            function generateColorMapping() {
+                if (colorCache.length < cellID) {
+                    colorCache = new Array(cellID);
+                }
+
+                const sortedClusters = [];
+                const clusterSizesLocal = clusterSizes;
+                const cellIDLocal = cellID;
+
+                for (let id = 1; id < cellIDLocal; id++) {
+                    const size = clusterSizesLocal[id];
+                    if (size > 0) {
+                        sortedClusters.push({id: id, size: size});
+                    }
+                }
+                sortedClusters.sort((a, b) => b.size - a.size);
+
+                // AI color palette
+                const topColors = generateColorMapping.topColors || (
+                    generateColorMapping.topColors = [
+                        {h: 210, s: 65, l: 42},
+                        {h: 15, s: 70, l: 45},
+                        {h: 120, s: 55, l: 35},
+                        {h: 45, s: 75, l: 48},
+                        {h: 270, s: 60, l: 40},
+                        {h: 180, s: 65, l: 38},
+                        {h: 25, s: 68, l: 50},
+                        {h: 300, s: 58, l: 45},
+                        {h: 90, s: 62, l: 40},
+                        {h: 330, s: 65, l: 48}
+                    ]
+                );
+
+                const topCount = Math.min(sortedClusters.length, topColors.length);
+                const colorCacheLocal = colorCache;
+
+                for (let i = 0; i < topCount; i++) {
+                    const color = topColors[i];
+                    const [r, g, b] = hslToRgb(color.h, color.s, color.l);
+                    colorCacheLocal[sortedClusters[i].id] = (255 << 24) | (b << 16) | (g << 8) | r;
+                }
+
                 const golden = 137.50776405003785;
-                const h = (id * golden) % 360;
-                const s = 70;
-                const l = 55;
-                const [r, g, b] = hslToRgb(h, s, l);
-                return (255 << 24) | (b << 16) | (g << 8) | r;
+                for (let i = topCount; i < sortedClusters.length; i++) {
+                    const cluster = sortedClusters[i];
+                    const h = (cluster.id * golden) % 360;
+                    const s = Math.min(30 + (cluster.size / 1000) * 15, 50);
+                    const l = Math.min(35 + (cluster.size / 2000) * 12, 60);
+                    const [r, g, b] = hslToRgb(h, s, l);
+                    colorCacheLocal[cluster.id] = (255 << 24) | (b << 16) | (g << 8) | r;
+                }
+
+                colorCacheLocal[0] = 0;
+            }
+
+            function idToColor(id) {
+                return colorCache[id] || 0;
             }
 
             // render
             function draw() {
-                for (let idx = 0; idx < grid.length; idx++) {
+                                for (let idx = 0; idx < grid.length; idx++) {
                     pixels[idx] = idToColor(grid[idx]);
                 }
                 c.putImageData(img, 0, 0);
@@ -115,6 +199,7 @@
                 P = params.P;
                 document.getElementById('paramPVal').textContent = P.toFixed(2);
                 generateGrid();
+                generateColorMapping();
                 draw();
             }
 
