@@ -43,7 +43,7 @@ function setDarkMode() {
 }
 
 function loadNav() {
-    fetch('/template/nav.html')
+    fetch('https://charliemax.dev/template/nav.html')
         .then(response => response.text())
         .then(data => {
         document.querySelector('nav').innerHTML = data;
