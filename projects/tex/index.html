@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <title>tex</title>
+    <style>
+        .latex-container {
+            max-width: 1200px;
+            width: 80%;
+        }
+        .latex-panels {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+        }
+        .latex-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        #latex-input {
+            width: 100%;
+            min-height: 400px;
+            padding: 16px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.15em;
+            resize: none;
+            border: 2px solid var(--borderblack);
+            border-radius: 8px;
+            background-color: var(--offoffblack);
+            color: white;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        #latex-input:focus {
+            border-color: var(--purple);
+        }
+        .light-mode #latex-input {
+            background-color: white;
+            color: var(--offblack);
+            border-color: var(--borderwhite);
+        }
+        .light-mode #latex-input:focus {
+            border-color: var(--sage);
+        }
+        .latex-output {
+            min-height: 400px;
+            padding: 16px;
+            border: 2px solid var(--borderblack);
+            border-radius: 8px;
+            background-color: var(--offoffblack);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: auto;
+            box-sizing: border-box;
+        }
+        .latex-output .katex {
+            font-size: 1.8em;
+        }
+        .light-mode .latex-output {
+            background-color: white;
+            border-color: var(--borderwhite);
+        }
+        .latex-output .placeholder-text {
+            color: gray;
+            font-style: italic;
+        }
+        .latex-error {
+            color: #e74c3c;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 6px;
+            background-color: rgba(231, 76, 60, 0.1);
+            display: none;
+        }
+        .latex-error.visible {
+            display: block;
+        }
+        @media (max-width: 768px) {
+            .latex-panels {
+                flex-direction: column;
+                gap: 16px;
+            }
+            #latex-input {
+                min-height: 250px;
+                font-size: 1em;
+            }
+            .latex-output {
+                min-height: 250px;
+            }
+            .latex-output .katex {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<nav></nav>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="/js/lightmode.js"></script>
+<body>
+    <div class="content">
+        <h1 style="text-align:center;">TeX Preview</h1>
+    </div>
+    <div class="content latex-container">
+        <div class="latex-panels">
+            <div class="latex-panel">
+                <textarea id="latex-input" placeholder="e.g. \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}"></textarea>
+            </div>
+            <div class="latex-panel">
+                <div id="latex-output" class="latex-output">
+                    <span class="placeholder-text">Rendered equation will appear here</span>
+                </div>
+            </div>
+        </div>
+        <div id="latex-error" class="latex-error"></div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const input = document.getElementById('latex-input');
+            const output = document.getElementById('latex-output');
+            const errorDiv = document.getElementById('latex-error');
+            let debounceTimer = null;
+
+            input.value = '';
+
+            function render() {
+                const expression = input.value.trim();
+                errorDiv.classList.remove('visible');
+                errorDiv.textContent = '';
+
+                if (!expression) {
+                    output.innerHTML = '<span class="placeholder-text">Type a LaTeX expression...</span>';
+                    return;
+                }
+
+                try {
+                    katex.render(expression, output, {
+                        displayMode: true,
+                        throwOnError: true,
+                        output: 'html'
+                    });
+                } catch (err) {
+                    errorDiv.textContent = err.message;
+                    errorDiv.classList.add('visible');
+                    try {
+                        katex.render(expression, output, {
+                            displayMode: true,
+                            throwOnError: false,
+                            output: 'html'
+                        });
+                    } catch (e) {
+                        output.innerHTML = '<span class="placeholder-text">Invalid LaTeX</span>';
+                    }
+                }
+            }
+
+            input.addEventListener('input', function () {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(render, 150);
+            });
+        });
+    </script>
+</body>
+</html>
