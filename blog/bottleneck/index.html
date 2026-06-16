@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <title>blog: information bottleneck</title>
+
+    <style>
+        :root {
+            --ib-fg: #e8e8e8;
+            --blue: dodgerblue;
+            --ib-accent2: #e07060;
+            --ib-ok: #5fae6e;
+            --ib-warm: #d99a3d;
+            --ib-muted: #9a9a9a;
+            --ib-box: #222220;
+            --ib-border: #3a3a36;
+        }
+        body.light-mode {
+            --ib-fg: #1c1c1c;
+            --blue: var(--sage);
+            --ib-accent2: #c0392b;
+            --ib-ok: #2e7d32;
+            --ib-warm: #b07a1f;
+            --ib-muted: #777;
+            --ib-box: #f4f4f2;
+            --ib-border: #d8d8d4;
+        }
+
+        .eq { margin: 14px 0; text-align: center; overflow-x: auto; color: var(--ib-fg); }
+
+        /* inline math: keep paragraph line rhythm; math may overhang slightly */
+        .imath {
+            display: inline-block;
+            line-height: 0;
+            vertical-align: middle;
+            white-space: nowrap;
+            margin: 0 0.04em;
+        }
+        .imath > .katex {
+            font-size: 1em;
+            line-height: 1.2;
+            display: inline-block;
+            vertical-align: middle;
+            text-indent: 0;
+        }
+
+        .remark {
+            background: var(--ib-box);
+            border-left: 3px solid var(--blue);
+            border-radius: 0 4px 4px 0;
+            padding: 10px 14px;
+            margin: 18px 0;
+            font-size: 0.95em;
+            color: var(--ib-fg);
+        }
+        .remark .remark-label {
+            font-variant: small-caps;
+            letter-spacing: 0.06em;
+            color: var(--blue);
+            font-weight: bold;
+            margin-right: 6px;
+        }
+
+        .widget {
+            border: 1px solid var(--ib-border);
+            border-radius: 6px;
+            padding: 14px 16px;
+            margin: 22px 0;
+            background: var(--ib-box);
+            color: var(--ib-fg);
+            overflow: hidden;
+        }
+        .widget .eq {
+            overflow: hidden;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 0.15em 0.25em;
+        }
+        .widget .term-panel { overflow: hidden; }
+        .widget-title {
+            font-family: 'Courier New', monospace;
+            font-size: 0.88em;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--ib-muted);
+            margin-bottom: 8px;
+        }
+        .widget canvas { width: 100%; height: auto; display: block; touch-action: none; }
+        .widget .controls {
+            display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+            margin-top: 10px; font-size: 1em;
+        }
+        .widget input[type=range] { flex: 1; min-width: 140px; accent-color: var(--blue); }
+        .widget input[type=checkbox] { accent-color: var(--blue); }
+        .widget .readout { font-family: 'Courier New', monospace; font-size: 0.95em; }
+        .widget .caption { color: var(--ib-muted); font-size: 0.88em; margin-top: 8px; }
+        .widget button {
+            background: transparent; color: var(--ib-fg);
+            border: 1px solid var(--ib-border); border-radius: 4px;
+            padding: 4px 10px; cursor: pointer; font-size: 0.9em;
+        }
+        .widget button:hover { border-color: var(--blue); color: var(--blue); }
+        .widget .status {
+            margin-top: 10px; padding: 6px 10px; font-size: 0.9em;
+            border: 1px dashed var(--ib-border); border-radius: 4px;
+        }
+
+        /* clickable equation terms */
+        .term { cursor: pointer; border-bottom: 2px dotted var(--ib-muted); padding-bottom: 1px; }
+        .term:hover { border-bottom-style: solid; }
+        .term.sel { border-bottom: 2px solid var(--blue); }
+        .term-panel {
+            min-height: 2.2em;
+            margin-top: 8px;
+            padding: 8px 12px;
+            border: 1px dashed var(--ib-border);
+            border-radius: 4px;
+            font-size: 0.93em;
+            color: var(--ib-fg);
+        }
+        .term-panel .hint { color: var(--ib-muted); font-style: italic; }
+
+        /* heatmap */
+        .hm { border-collapse: collapse; margin: 8px auto; }
+        .hm td {
+            width: 34px; height: 26px; text-align: center;
+            font-family: 'Courier New', monospace; font-size: 0.8em;
+            border: 1px solid var(--ib-border);
+        }
+        .hm .hdr {
+            border: none;
+            color: var(--ib-muted);
+            font-family: 'Courier New', monospace;
+            font-size: 0.78em;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            background: none !important;
+        }
+        .ib-hm-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .ib-mi-readout {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.7;
+            color: var(--ib-fg);
+        }
+    </style>
+</head>
+<nav></nav>
+<script src="/js/lightmode.js"></script>
+<body>
+    <div class="content">
+        <h1 style="text-align:center;">Understanding the Information Bottleneck</h1>
+        <h3 style="text-align:center;">posted 06/16/2026</h3>
+    </div>
+
+    <div class="content">
+        <p>
+            <i>Draft version; this page is a work in progress.</i>
+        </p>
+        <p>
+            At first glance, it might be unclear why information theory has resurged as a topic of discussion within machine learning circles. Information theory tells us the most efficient way to represent data given our knowledge about the process that creates it, often leveraging general statistical properties that might be useful in, say, noisy audio signals, but seem less immediately applicable to modeling or complex reasoning.
+        </p>
+        <p>
+            More specifically, information theory tells us about the most efficient <i>encoding</i> $c(X)$ of a random variable $X$ taking values in a set $\mathcal{X}$. If we know certain things about $X$, e.g. that it is uniform, independent and identically distributed, or generated by Markov chains themselves satisfying certain properties, then we can say certain things about the <i>informational content</i> of our data and its representation.
+        </p>
+        <p>
+            This is actually saying something quite remarkable: if we know roughly how something works (or how it looks like it works), we can efficiently represent it. A big idea within modern machine learning is that maybe this relationship holds conversely: if we can efficiently represent some data, then those representations must in some way leverage the underlying structure of the process generating that data. Depending on how formal and complex that structure is, leveraging it might genuinely constitute some form of <i>intelligent</i> behavior.
+        </p>
+        <p>
+            3b1b has an excellent <a href="https://www.youtube.com/watch?v=l6DKRf-fAAM" target="_blank" class="blue">video series</a> on this notion, that <i>compression is intelligence</i>. This page is meant to demonstrate one specific interpretation of that notion: a formalization of intelligence in information-theoretic concepts, as a tradeoff between compression and relevance. This is the <b>information bottleneck</b>.
+        </p>
+        <p>
+            This page walks through some basic concepts in information theory while largely following four papers:
+        </p>
+        <ul>
+            <li><a class="blue" href="https://arxiv.org/abs/physics/0004057" target="_blank">Tishby, Pereira, Bialek (1999)</a>: The information bottleneck method</li>
+            <li><a class="blue" href="https://arxiv.org/abs/1503.02406" target="_blank">Tishby, Zaslavsky (2015)</a>: Deep Learning and the Information Bottleneck Principle</li>
+            <li><a class="blue" href="https://arxiv.org/abs/2010.12811" target="_blank">Wu, Ren, Li, Leskovec (2020)</a>: Graph Information Bottleneck</li>
+            <li><a class="blue" href="https://arxiv.org/abs/2402.06716" target="_blank">Yuan et al. (2024)</a>: Dynamic Graph Information Bottleneck</li>
+        </ul>
+        <p>
+            My goal here is to convey a high-level intuition of the relevant information-theoretic concepts, explain the information bottleneck and what it says about intelligence, and demonstrate its effectiveness in graph models, which are notorious for overfitting.
+        </p>
+    </div>
+
+    <div class="content">
+        <h2>Primer</h2>
+        <p>
+            The information bottleneck relies on three quantities. The <b>entropy</b> $H(X) = -\sum_x p(x)\log p(x)$ is the most foundational of them, and measures uncertainty. Entropy is maximized by a uniform distribution: when all outcomes are equally likely, uncertainty is maximized. The entropy also tells us how many bits (on average) it takes for an optimal encoder to specify an outcome of $X$.
+        </p>
+
+        <p>
+            The interactive below aims to give you a sense for how entropy (and thus uncertainty) track uniformity:
+        </p>
+
+        <div class="widget">
+            <div class="widget-title">entropy and uniformity</div>
+            <canvas id="ent-canvas" width="760" height="280"></canvas>
+            <div class="readout" id="ent-readout" style="margin-top:10px; min-height:1.2em;"></div>
+        </div>
+
+        <p>
+            We can also quantify more nuanced notions of uncertainty: <b>conditional entropy</b> $H(X \mid Y)$ is the uncertainty that remains about $X$ after observing some (possibly related) $Y$; if $Y$ has nothing to do with $X$ (i.e. they are independent) then $H(X \mid Y) = H(X)$, otherwise, we'll always learn <i>something</i>, so $H(X \mid Y) < H(X)$. 
+            The difference here between the conditional and 'regular' entropy is the most important quantity for the information bottleneck, the <b>mutual information</b> $I(X;Y)$, which quantifies the uncertainty removed about $X$ after observing some $Y$:
+        </p>
+            $$I(X;Y) = H(X) - H(X \mid Y) = \sum_{x,y} p(x,y)\log\frac{p(x,y)}{p(x)\,p(y)} = D\!\left[\,p(x,y)\,\|\,p(x)p(y)\,\right]$$
+        <p>
+            Mutual information is measured by the (Kullback-Leibler) <b>divergence</b> between the probabilities of (a) seeing both events at the same time and (b) seeing them at the same time, assuming they were independent. So if both events were really independent, then the "difference" between what you saw and what you would have seen were they actually independent is zero, and there isn't any mutual information between them. By contrast, dependent events would have higher mutual information, since their joint distribution would differ a fair bit from the joint distribution were they independent.
+        </p>
+        <p>
+            Divergence is a weird notion of "distance" or "difference" to wrap your head around, though--for starters, it's not symmetric, and it scales somewhat unintuitively. The interactive below shows how it behaves for two Gaussians.
+        </p>
+
+        <div class="widget">
+            <div class="widget-title">KL divergence between two gaussians</div>
+            <canvas id="kl-canvas" width="760" height="310"></canvas>
+            <div class="controls">
+                <label for="kl-mu1">$\mu_p$</label>
+                <input type="range" id="kl-mu1" min="-3" max="3" step="0.05" value="-1">
+                <label for="kl-s1">$\sigma_p$</label>
+                <input type="range" id="kl-s1" min="0.25" max="2" step="0.05" value="0.6">
+            </div>
+            <div class="controls">
+                <label for="kl-mu2">$\mu_q$</label>
+                <input type="range" id="kl-mu2" min="-3" max="3" step="0.05" value="1">
+                <label for="kl-s2">$\sigma_q$</label>
+                <input type="range" id="kl-s2" min="0.25" max="2" step="0.05" value="0.8">
+            </div>
+            <div class="caption">
+                Top: pdfs of $p$ and $q$. Bottom: KL divergences and their underlying distributions. Note divergence values here are in nats (calculations done in base $e$; we're working with Gaussians).
+            </div>
+        </div>
+
+        <p>
+            Mutual information plays a little nicer. The interactive below shows how it interacts with entropy and conditional entropy for a simple setup: imagine we flip a coin, but the sun is in our eye, so with probability $\varepsilon$ we misread the coin (i.e. heads as tails, tails as heads). If $Y$ are the coinflips we observe, and $X$ is the real state of the coin, then our uncertainty about $X$ is constant, but its sources differ depending on $\varepsilon$:
+        </p>
+
+        <div class="widget">
+            <div class="widget-title">mutual information in the sunshine</div>
+            <canvas id="mi-canvas" width="760" height="130"></canvas>
+            <div class="controls">
+                <label for="mi-eps">flip probability &epsilon;</label>
+                <input type="range" id="mi-eps" min="0" max="0.5" step="0.005" value="0.1">
+            </div>
+            <div class="caption">
+                Notice how $H(X)$ is constant: we will always be equally uncertain about a fair coinflip. We might be uncertain because we saw it correctly, or uncertain because it's a fair coinflip 
+            </div>
+        </div>
+
+        <p>
+            One last ingredient: as we model increasingly complex processes--including, later, the layers of a neural network itself--we will make use of <b>Markov chains</b>, systems that whose transitions between <i>states</i> are specified by <i>transition probabilities</i>, and where the future depends on the present only through the current state. When random variables form such a chain, written $A \to B \to C$, we mean that $C$ depends on $A$ only through $B$.
+        </p>
+        <p>
+            This Markov structure immediately gives the <b>data processing inequality</b> (DPI): $I(A;B) \ge I(A;C)$; processing can only destroy information. This single inequality does lots of heavy lifting for everything that follows.
+        </p> 
+    </div>
+
+    <div class="content">
+        <h2>The information bottleneck</h2>
+        <p>
+            Classic lossy compression is <a href="https://en.wikipedia.org/wiki/Rate%E2%80%93distortion_theory" target="_blank"><b>rate-distortion theory</b></a>: we want to compress $X$ into a representation $\tilde{X}$ using as few bits as possible (e.g. with a small rate $I(X; \tilde{X})$), while keeping a distortion $\langle d(x,\tilde{x})\rangle$ small. 
+            The catch is that in rate-distorition theory <i>we</i> need to supply the distortion function $d$, which means we need to choose which features of the signal matter. 
+            For speech, images, or protein sequences, nobody actually knows the "correct" $d$.
+        </p>
+        <p>
+            The information bottleneck aims to avoid defining relevance by hand, instead defining it through labels $Y$ that we have samples of. Relevant information is then just $I(X; Y)$, and a good representation is a compressed $\tilde{X}$ that keeps as much of it as possible. 
+            Formally, we fix the Markov chain $Y \to X \to \tilde{X}$ (where the representation $\tilde{X}$ only sees $X$) and minimize the Lagrangian below:
+        </p>
+
+        <div class="widget" id="ib-eq-widget">
+            <div class="widget-title">the IB objective</div>
+            <div class="eq" style="font-size:1.15em;">
+                <span class="term" data-key="L"><span class="imath" data-tex="\mathcal{L}\big[p(\tilde{x}\mid x)\big]"></span></span>
+                <span class="imath" data-tex="\;=\;"></span>
+                <span class="term" data-key="comp"><span class="imath" data-tex="I(X;\tilde{X})"></span></span>
+                <span class="imath" data-tex="\;-\;"></span>
+                <span class="term" data-key="beta"><span class="imath" data-tex="\beta"></span></span>
+                <span class="term" data-key="rel"><span class="imath" data-tex="\,I(\tilde{X};Y)"></span></span>
+            </div>
+            <div class="term-panel" id="ib-eq-panel"><span class="hint">click a dotted term above</span></div>
+        </div>
+
+        <p>
+            Setting the variational derivative to zero yields an exact, self-consistent solution:
+        </p>
+        <div class="eq" data-tex="p(\tilde{x}\mid x) \;=\; \frac{p(\tilde{x})}{Z(x,\beta)}\,\exp\!\Big(-\beta\, D\big[\,p(y\mid x)\;\|\;p(y\mid \tilde{x})\,\big]\Big),"></div>
+        <p>
+            together with the consistency conditions <span class="imath" data-tex="p(\tilde{x}) = \sum_x p(x)p(\tilde{x}\mid x)"></span> and <span class="imath" data-tex="p(y\mid\tilde{x}) = \sum_x p(y\mid x)p(x\mid\tilde{x})"></span>. This is a <a href="https://en.wikipedia.org/wiki/Boltzmann_distribution" target="_blank">Boltzmann distribution</a> where the "energy" is a KL divergence between predictive distributions. The original IB paper showed that iterating these three equations in turn provably converges (though not necessarily to the global optimum).
+        </p>
+
+        <div class="remark">
+            <span class="remark-label">remark (divergence as effective distortion)</span>
+            The divergence $D[p(y|x)\,\|\,p(y|\tilde{x})]$ was <i>not assumed anywhere</i>; it fell out of the <a href="https://en.wikipedia.org/wiki/Variational_principle" target="_blank">variational principle</a> as the effective distortion measure. This is information theory's way of answering: "what should I care about preserving?"
+        </div>
+
+        <p>
+            As an example, consider the following toy problem. We have $\vert X \vert = 8$ signals, each with its own relevance profile $p(y \mid x)$ over a binary label $Y \in \{0, 1\}$, and a bottleneck of $\vert \tilde{X} \vert = 3$ codewords to compress them into. The signals fall into three natural groups by their $p(y \mid x)$ &mdash; low, medium, and high $p(y=1\mid x)$. Drag $\beta$ to change how hard we push for relevance over compression, and watch the optimal encoder $p(\tilde{x} \mid x)$ reorganize as the solution slides along the <b>information plane</b> $(I(X;\tilde{X}),\, I(\tilde{X};Y))$.
+        </p>
+
+        <div class="widget">
+            <div class="widget-title">the information plane</div>
+            <canvas id="ib-canvas" width="760" height="300"></canvas>
+            <div class="controls">
+                <label for="ib-beta">&beta;</label>
+                <input type="range" id="ib-beta" min="0" max="100" step="1" value="55">
+                <span class="readout" id="ib-readout"></span>
+            </div>
+            <div class="ib-hm-row">
+                <div id="ib-heatmap"></div>
+                <div class="ib-mi-readout" id="ib-mi-readout"></div>
+            </div>
+            <div class="caption">
+                Top: the information plane; each dot is the converged solution for one $\beta$, bounded above by $I(X;Y)$ by the DPI. Bottom: the learned soft assignment $p(\tilde{x} \mid x)$. At low $\beta$, everything collapses to one codeword (maximal compression, zero relevance); as $\beta$ grows the encoder splits into 2, then 3 clusters. Those splits are second-order phase transitions in $\beta$, referred to as <i>bifurcations</i> in the information plane.
+            </div>
+        </div>
+
+        <div class="remark">
+            <span class="remark-label">remark (bifurcations)</span>
+            The information curve is concave with slope $\delta I(\tilde{X};Y)/\delta I(X;\tilde{X}) = \beta^{-1}$. Annealing $\beta$ from 0 upward traces the curve; the cluster splits ("phase transitions") visible in the heatmap happen at critical $\beta$ values determined by second-order statistics of the joint distribution. This is important: the IB litereature claims that these bifurcations have something to say about network architecture.
+        </div>
+    </div>
+
+    <div class="content">
+        <h2>Deep learning and the information bottleneck</h2>
+        <p>
+            A feedforward network maps inputs $X$ through hidden layers $h_1, \dots, h_m$ to a prediction $\hat{Y}$. Each layer only sees the previous one, so the layers form a Markov chain. By the DPI we get the chain of inequalities:
+        </p>
+            $$I(Y;X) \;\ge\; I(Y;h_1) \;\ge\; \cdots \;\ge\; I(Y;h_m) \;\ge\; I(Y;\hat{Y})$$
+
+        <div class="remark">
+            <span class="remark-label">remark (information loss)</span>
+            Notice that relevant information lost at any layer is gone forever; no amount of downstream "cleverness" recovers it. 
+        </div>
+        <p>
+            Under the information bottleneck, we treat each layer $h_i$ as a bottleneck variable, place it on the information plane at coordinates $(I(X;h_i),\, I(Y;h_i))$, and compare the whole network against the optimal IB curve for the data's joint distribution $p(X,Y)$. Supervised learning, in this view, <i>is</i> the IB problem: our goal is to extract an approximate minimal sufficient statistic of $X$ for $Y$.
+        </p>
+        <div class="remark">
+            <span class="remark-label">remark (cross-entropy)</span>
+            It turns out that the relevance half $I(Y;Z)$ of the objective is something we already optimize every day. Though relevance cannot be computed directly (it needs the true $p(y \mid z)$), we can lower-bound it by sticking a classifier $q(y \mid z)$ on top of the representation and asking how well it predicts the labels. Maximizing that bound is <i>exactly</i> minimizing the cross-entropy loss. In other words, the "maximize relevance" half of the information bottleneck is just ordinary supervised training in disguise; the only genuinely new ingredient deep IB adds is the compression half, $\beta\, I(X;Z)$, which shows up as a regularizer.
+        </div>
+        <p>
+            Why would we <i>want</i> layers to compress (i.e. minimize $I(X;h_i)$), rather than just maximize relevance? The answer lies in generalization: the IB authors show that, by finite-sample bounds, the estimation error of $I(\tilde{X};Y)$ scales at $O(K|\mathcal{Y}|/\sqrt{n})$ where $K \approx 2^{I(X;\tilde{X})}$ is the effective description length of the representation. A layer that hasn't compressed is a layer whose apparent relevance you can't trust, as it may be overfitting. Again, notice this is making a rather bold statement: <i>compression is necessary for generalization</i>.
+        </p>
+        <p>
+            So what does this predict about training? If each layer is racing toward a minimal sufficient statistic, its position $(I(X;h_i),\, I(Y;h_i))$ on the information plane should not sit still during optimization. Empirical information-plane studies report a surprising two-phase trajectory for stochastic gradient descent: first, a brief <b>fitting</b> phase, where every layer rapidly gains information about both $X$ and $Y$ as the network memorizes the training signal. Then, a much longer <b>compression</b> phase, where the layers slowly shed information about the input ($I(X;h)$) while holding onto relevance ($I(Y;h)$). In this picture, most of training is spent forgetting the irrelevant parts of $X$ rather than fitting the labels.
+        </p>
+        <p>
+            The interactive below illustrates these phases. The black curve is the IB limit; the best relevance achievable by any representation at a given level of compression. Each dot is a hidden layer, linked into the Markov chain $X \to h_1 \to \dots \to \hat{Y}$.
+        </p>
+
+        <div class="widget">
+            <div class="widget-title">layer drift</div>
+            <canvas id="dnn-canvas" width="760" height="320"></canvas>
+            <div class="controls">
+                <label for="dnn-epoch">training progress</label>
+                <input type="range" id="dnn-epoch" min="0" max="100" step="1" value="0">
+                <span class="readout" id="dnn-readout"></span>
+            </div>
+            <div class="caption">
+                This is a qualitative reconstruction of empirical information-plane studies. Notice that the gap between the layers and optimal curve (which the authors call $\Delta G$) is the unrecoverable relevance due to finite samples. Deeper layers compress further (smaller $I(X;h) \implies$ smaller $\beta$) and, by the DPI, sit no higher in $I(Y;h)$.
+            </div>
+        </div>
+
+        <div class="remark">
+            <span class="remark-label">remark (training dynamics)</span>
+            This is <i>not</i> a settled theory; the dynamics-of-training claims remain contested. Two-phase compression was reported empirically in <a href="https://arxiv.org/abs/1703.00810" target="_blank">Schwartz-Ziv & Tishby 2017</a>, but later work (notably <a href="https://arxiv.org/abs/1810.10531" target="_blank">Saxe et al., 2018</a>) showed that the compression phase can depend on the choice of activation function and on how mutual information is estimated/binned in deterministic networks (where $I(X;h)$ is technically infinite or constant unless you add noise or discretize).
+        </div>
+
+        <div class="remark">
+            <span class="remark-label">remark (model architecture)</span>
+            The 2015 paper also conjectures a correspondence between the IB curve's bifurcations and where layers "should" sit: phase transitions on the curve are governed by second-order correlations of the data, the same structure that breaks linear separability. Since a single sigmoidal neuron can only carve linearly separable regions, optimal layer placements would sit just past the bifurcations. This idea remains contested; for more see <a href="https://www.youtube.com/watch?v=utvIaZ6wYuw&t=1630s&pp=ygUddGlzaGJ5IGluZm9ybWF0aW9uIGJvdHRsZW5lY2s%3D" target="_blank">Tishby's remarks</a>.
+        </div>
+    </div>
+
+    <div class="content">
+        <h2>Graph information bottleneck</h2>
+        <p>
+            So far, the information bottleneck has assumed that training examples are i.i.d., and that inputs are feature vectors. Graphs break both of these assumptions: input is now $\mathcal{D} = (A, X)$ (adjacency matrix & node features), and the rows of $X$ are correlated through the edges $E$, so we cannot split the data per node. Instead, we operate in a <i>transductive</i> setting, where we effectively observe a single realization of $P(\mathcal{D})$. The graph information bottleneck keeps the objective in a recognizable form
+        </p>
+            $$\min_{\;\mathbb{P}(Z\,\mid\,\mathcal{D})\,\in\,\Omega}\ \mathrm{GIB}_{\beta}(\mathcal{D}, Y; Z) \;\triangleq\; -I(Y;Z) \;+\; \beta\, I(\mathcal{D};Z)$$
+        <p>
+            but searches instead over $\Omega$ (the space of all encoders). GIB deals with two obstacles:
+        </p>
+        <ul>
+            <li>First, our data are no longer i.i.d., which breaks most of the fundamental assumptions of information theory. GIB replaces the i.i.d. assumption with a <b>local-dependence assumption</b>: conditioned on its $k$-hop neighborhood, a node is independent of the rest of the graph. This restricts $\Omega$ to encoders that respect local dependence, which take the form of layered Markov chains that alternate between extracting <i>structural</i> information $Z_A^{(l)}$ and <i>feature</i> information $Z_X^{(l)}$.</li>
+            <li>Second, $A$ is discrete, which throws a wrench in our differentiation plans. To resolve this, the encoder treats attention weights as parameters of a neighbor-sampling distribution (e.g. categorical or Bernoulli), with <a href="https://arxiv.org/abs/1611.01144" target="_blank">Gumbel-softmax reparameterization</a>.</li>
+        </ul>
+        <p>
+            Now we need to actually compute the objective. Just like in deep learning, the compression term $I(\mathcal{D};Z)$ is intractable, so we replace it with a variational upper bound (an expression we <i>can</i> compute that is guaranteed to be at least as big). The new wrinkle is that our encoder builds $Z$ in two interleaved pieces (structure & features), so the bound splits into two matching pieces. By the DPI we have:
+        </p>
+        $$I(\mathcal{D}; Z^{(L)}_X) \;\le\; \sum_{l \in S_A} \underbrace{\mathbb{E}\!\left[\log\tfrac{\mathbb{P}(Z_A^{(l)} \mid A,\, Z_X^{(l-1)})}{\mathbb{Q}(Z_A^{(l)})}\right]}_{\mathrm{AIB}^{(l)}\;\text{(structure)}} \;+\; \sum_{l \in S_X} \underbrace{\mathbb{E}\!\left[\log\tfrac{\mathbb{P}(Z_X^{(l)} \mid Z_X^{(l-1)},\, Z_A^{(l)})}{\mathbb{Q}(Z_X^{(l)})}\right]}_{\mathrm{XIB}^{(l)}\;\text{(features)}}$$
+        <p>
+            Each term is a KL divergence between what the encoder actually does and a deliberately dumb <b>reference distribution</b> $\mathbb{Q}$: for structure (the AIB term), $\mathbb{Q}$ treats every neighbor as equally worth attending to; for features (the XIB term), $\mathbb{Q}$ is a generic blob (a mixture of Gaussians). Measuring against a dumb baseline is what makes these terms <i>penalties</i>: the encoder only pays when it pays attention to specific edges or specific feature directions, so each term taxes the model for using structure or features it didn't strictly need.
+        </p>
+        <div class="remark">
+            <span class="remark-label">remark (implementation)</span>
+            Notice that a GIB model is just a <a href="https://arxiv.org/abs/1710.10903" target="_blank">graph attention network</a> (GAT) trained with the usual cross-entropy loss, plus two regularizers, one taxing edges, one taxing features. The bottleneck manifests entirely in the loss function.
+        </div>
+
+        <div class="remark">
+            <span class="remark-label">remark (adversarial attacks)</span>
+            Splitting the penalty into two terms allows us to defend against different kinds of adversarial attacks. Attackers can poison either the <i>edges</i> (adding fake connections) or the <i>features</i> (corrupting node attributes). Against edge-based attacks, the structure penalty does nearly all the work, while against feature noise the feature penalty kicks in. Notice also that, because the network passes messages over a <i>resampled</i> version of the graph rather than the original adjacency matrix, it never fully trusts the raw edges in the first place, allowing for additional robustness.
+        </div>
+    </div>
+
+    <div class="content">
+        <h2>Dynamic graph information bottleneck</h2>
+        <p>
+            DGIB extends the GIB to <b>dynamic graphs</b>: a sequence of discrete snapshots $\mathcal{G}^1, \dots, \mathcal{G}^T$ under the link prediction task. A naive adaptation (running GIB per snapshot, aggregating with an RNN, and plugging $\mathcal{D} = (\mathcal{G}^{1:T}, X^{T+1})$ into the IB objective) is insufficient: the training process effectively decomposes into $T{+}1$ per-step Markov chains, and the network lazily satisfies each one; every intermediate $Z^{t+1}$ becomes minimal-and-sufficient <i>for its own next step</i>, while the final $Z^{T+1}$ (the one we actually care about) ends up sub-optimal. Per-step compression doesn't agree on what to keep.
+        </p>
+        <p>
+            The fix is a third requirement on top of minimal and sufficient: <b>consensus</b>. The compression at every step should preserve the predictive pattern shared across steps. DGIB enforces this by splitting the objective into two cooperating channels:
+        </p>
+
+        <div class="widget" id="dgib-eq-widget">
+            <div class="widget-title">the DGIB objective</div>
+            <div class="eq" style="font-size:1.05em;">
+                <span class="term" data-key="total"><span class="imath" data-tex="\mathcal{L}_{\mathrm{DGIB}}"></span></span>
+                <span class="imath" data-tex="\;=\;\alpha\,"></span><span class="term" data-key="ms"><span class="imath" data-tex="\big[-I(Y^{T+1};Z^{T+1}) + \beta_1 I(\mathcal{D};Z^{T+1})\big]"></span></span>
+                <span class="imath" data-tex="\;+\;(1{-}\alpha)\,"></span><span class="term" data-key="c"><span class="imath" data-tex="\big[-I(Y^{T+1};Z^{T+1}) + \beta_2 I(Z^{1:T};Z^{T+1})\big]"></span></span>
+            </div>
+            <div class="term-panel" id="dgib-eq-panel"><span class="hint">click a dotted term above</span></div>
+        </div>
+
+        <p>
+            Making this trainable reuses GIB's playbook, just stretched along the time axis. Each of the three pieces gets handled the same way as before:
+        </p>
+        <ul>
+            <li><b>Relevance</b> ($I(Y^{T+1};Z^{T+1})$) is still intractable, so we still slap a classifier $Q(Y \mid Z)$ on top; the bound collapses to ordinary cross-entropy loss.</li>
+            <li><b>Compression</b> ($I(\mathcal{D};Z^{T+1})$): GIB's local-dependence assumption now extends across time, so a node depends only on its $k$-hop neighbors in the current and previous snapshot. That Markov structure lets us split the bound into per-snapshot pieces, summed over time: a structure penalty for the sampled edges $\hat{A}^t$ and a feature penalty for the features $Z^t$. These are exactly the two penalties from the graph section, now once per snapshot.</li>
+            <li><b>Consensus</b> ($I(Z^{1:T};Z^{T+1})$) gets the same kind of variational upper bound as the compression term, but measured against the earlier representations instead of the raw input, penalizing the final representation for disagreeing with the ones before it.</li>
+        </ul>
+
+        <p>
+            The schematic below shows the whole pipeline. We have three snapshots $\mathcal{G}^1, \mathcal{G}^2, \mathcal{G}^3$ of a graph with two communities, which the model processes left to right into a final prediction. The graph has been contaminated: the red edges have been injected by attackers, and the speckled nodes show corrupted features. The three checkboxes turn each compression term on or off; toggle them and watch which noise survives to the prediction.
+        </p>
+
+        <div class="widget">
+            <div class="widget-title">DGIB in practice</div>
+            <canvas id="dgib-canvas" width="760" height="280"></canvas>
+            <div class="controls">
+                <label><input type="checkbox" id="dgib-aib" checked> structure compression</label>
+                <label><input type="checkbox" id="dgib-xib" checked> feature compression</label>
+                <label><input type="checkbox" id="dgib-cons" checked> consensual compression</label>
+            </div>
+            <div class="status" id="dgib-status"></div>
+            <div class="caption">
+                Thick edges are the persistent two-community pattern (the real signal); thin gray edges are throwaway per-snapshot noise; red edges are the adversarial attack.
+            </div>
+        </div>
+
+        <div class="remark">
+            <span class="remark-label">remark (robustness)</span>
+            The same $\beta$ trade-off is still here at the end of the chain. DGIB's experiments show that dialing down the compression (larger $1/\beta_1, 1/\beta_2$) steadily improves accuracy on clean data but steadily hurts robustness under attack.
+        </div>
+    </div>
+
+    <div class="content">
+        <h2>Closing thoughts</h2>
+        <p>
+            The information bottleneck is a playbook: pick a relevance variable, write down $\min\, I(\text{input};\,\text{representation}) - \beta\, I(\text{representation};\,\text{relevance})$, and then fight for tractability. Each paper just picks its fight in a different setting. The original IB could afford to be exact, solving the objective directly with a convergent set of self-consistent equations. Deep learning gave that up for variational bounds, which turn the relevance term into cross-entropy and the compression term into a divergence penalty. Graphs added the wrinkle that data points are no longer independent, so i.i.d. is swapped for local dependence and the compression penalty splits along structure and features. Dynamic graphs stretch that across time and add a consensus term so the snapshots don't each compress toward their own private solution.
+        </p>
+        <p>
+            But throughout all this, one idea keeps recurring: intelligence is a trade-off between compression and relevance.
+        </p>
+    </div>
+
+    <!-- SCRIPTS/WIDGETS -->
+    <script>
+    function processDollarTeX(root) {
+        const SKIP = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'CODE', 'PRE', 'KBD', 'SAMP']);
+
+        function skipEl(el) {
+            return SKIP.has(el.tagName)
+                || el.classList.contains('eq')
+                || el.classList.contains('imath')
+                || el.classList.contains('katex');
+        }
+
+        function walk(parent) {
+            for (const node of Array.from(parent.childNodes)) {
+                if (node.nodeType === Node.TEXT_NODE) replaceTeXInText(node);
+                else if (node.nodeType === Node.ELEMENT_NODE && !skipEl(node)) walk(node);
+            }
+        }
+
+        function replaceTeXInText(textNode) {
+            const text = textNode.textContent;
+            if (!text.includes('$')) return;
+
+            const frag = document.createDocumentFragment();
+            let i = 0;
+            while (i < text.length) {
+                if (text[i] === '\\' && text[i + 1] === '$') {
+                    frag.appendChild(document.createTextNode('$'));
+                    i += 2;
+                    continue;
+                }
+                if (text[i] === '$' && text[i + 1] === '$') {
+                    const end = text.indexOf('$$', i + 2);
+                    if (end === -1) {
+                        frag.appendChild(document.createTextNode(text.slice(i)));
+                        break;
+                    }
+                    const el = document.createElement('div');
+                    el.className = 'eq';
+                    el.dataset.tex = text.slice(i + 2, end).trim();
+                    frag.appendChild(el);
+                    i = end + 2;
+                    continue;
+                }
+                if (text[i] === '$') {
+                    let j = i + 1;
+                    while (j < text.length) {
+                        if (text[j] === '\\' && text[j + 1] === '$') { j += 2; continue; }
+                        if (text[j] === '$') break;
+                        j++;
+                    }
+                    if (j >= text.length) {
+                        frag.appendChild(document.createTextNode(text.slice(i)));
+                        break;
+                    }
+                    const el = document.createElement('span');
+                    el.className = 'imath';
+                    el.dataset.tex = text.slice(i + 1, j);
+                    frag.appendChild(el);
+                    i = j + 1;
+                    continue;
+                }
+                const next = text.indexOf('$', i);
+                const stop = next === -1 ? text.length : next;
+                frag.appendChild(document.createTextNode(text.slice(i, stop)));
+                i = stop;
+            }
+            textNode.parentNode.replaceChild(frag, textNode);
+        }
+
+        walk(root.nodeType === Node.DOCUMENT_NODE ? root.body : root);
+    }
+
+    function renderMath(root) {
+        const scope = root || document.body;
+        processDollarTeX(scope);
+        scope.querySelectorAll('.eq[data-tex]').forEach(el => {
+            katex.render(el.dataset.tex, el, { displayMode: true, throwOnError: false });
+        });
+        scope.querySelectorAll('.imath[data-tex]').forEach(el => {
+            katex.render(el.dataset.tex, el, { displayMode: false, throwOnError: false });
+        });
+    }
+
+    const log2 = x => Math.log(x) / Math.LN2;
+    function fmtI(v) { return Math.max(0, v).toFixed(3); }
+    function H2(p) { // binary entropy
+        if (p <= 0 || p >= 1) return 0;
+        return -p * log2(p) - (1 - p) * log2(1 - p);
+    }
+    function Hdist(probs) {
+        let s = 0;
+        for (const p of probs) if (p > 1e-15) s -= p * log2(p);
+        return s;
+    }
+    // for lightmode
+    function cssVar(name) {
+        return getComputedStyle(document.body).getPropertyValue(name).trim();
+    }
+    // shared widget label fonts (canvas)
+    const WF = {
+        monoTitle: '12px "Courier New", monospace',
+        monoAxis: '12px "Courier New", monospace',
+        axis: '15px Georgia',
+        label: '15px Georgia',
+        hint: '16px Georgia',
+        small: '13px Georgia',
+        tag: '13px Georgia',
+    };
+
+    // all widget redraw functions register here; rerun on lightmode toggle
+    const ibRedraws = [];
+    new MutationObserver(() => ibRedraws.forEach(f => f()))
+        .observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+    // WIDGET
+    (function () {
+        const canvas = document.getElementById('ent-canvas');
+        const ctx = canvas.getContext('2d');
+        const readout = document.getElementById('ent-readout');
+        const N = 40;
+
+        const bx = 58, by = 28, plotH = 190;
+        let bw, binW, bot;
+
+        function refreshLayout() {
+            ctx.font = WF.small;
+            const padR = Math.ceil(ctx.measureText('uniform').width) + 12;
+            bw = canvas.width - bx - padR;
+            bot = by + plotH;
+            binW = bw / N;
+        }
+
+        // idle | drawing | animating | done
+        let phase = 'idle';
+        let stroke = [];
+        let probs = null;
+        const shown = new Float32Array(N);
+        let animStart = 0;
+        let animId = null;
+        let showEntropy = false;
+
+        function clampPlot(x, y) {
+            return {
+                x: Math.max(bx, Math.min(bx + bw, x)),
+                y: Math.max(by, Math.min(bot, y)),
+            };
+        }
+
+        function canvasPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const src = e.touches ? e.touches[0] : e;
+            return {
+                x: (src.clientX - rect.left) * (canvas.width / rect.width),
+                y: (src.clientY - rect.top) * (canvas.height / rect.height),
+            };
+        }
+
+        function interpolateY(pts, x) {
+            if (pts.length === 0) return bot;
+            if (x <= pts[0].x) return pts[0].y;
+            if (x >= pts[pts.length - 1].x) return pts[pts.length - 1].y;
+            for (let k = 0; k < pts.length - 1; k++) {
+                const a = pts[k], b = pts[k + 1];
+                if (x >= a.x && x <= b.x) {
+                    const t = (b.x - a.x) < 1e-6 ? 0 : (x - a.x) / (b.x - a.x);
+                    return a.y + t * (b.y - a.y);
+                }
+            }
+            return bot;
+        }
+
+        function sampleProbsFromStroke() {
+            if (stroke.length < 2) return null;
+            const pts = stroke.slice().sort((a, b) => a.x - b.x);
+            const raw = new Float32Array(N);
+            for (let i = 0; i < N; i++) {
+                const x = bx + (i + 0.5) * binW;
+                raw[i] = Math.max(0, bot - interpolateY(pts, x));
+            }
+            let sum = 0;
+            for (let i = 0; i < N; i++) sum += raw[i];
+            if (sum < 30) return null;
+            const out = new Float32Array(N);
+            for (let i = 0; i < N; i++) out[i] = raw[i] / sum;
+            return out;
+        }
+
+        function yMax() {
+            const uni = 1 / N;
+            if (!probs) return uni * 1.1;
+            let m = uni;
+            for (let i = 0; i < N; i++) m = Math.max(m, probs[i]);
+            return m * 1.1;
+        }
+
+        function probToY(p) {
+            return bot - (p / yMax()) * plotH;
+        }
+
+        function stopAnim() {
+            if (animId !== null) {
+                cancelAnimationFrame(animId);
+                animId = null;
+            }
+        }
+
+        function draw() {
+            refreshLayout();
+            const fg = cssVar('--ib-fg'), accent = cssVar('--blue'),
+                  muted = cssVar('--ib-muted'), border = cssVar('--ib-border');
+            const W = canvas.width, Hc = canvas.height;
+            const committed = phase === 'animating' || phase === 'done';
+            const ymax = yMax();
+            const uniP = 1 / N;
+
+            ctx.clearRect(0, 0, W, Hc);
+
+            // plot frame
+            ctx.strokeStyle = border;
+            ctx.strokeRect(bx, by, bw, plotH);
+
+            // histogram bars (only after release)
+            if (committed) {
+                for (let i = 0; i < N; i++) {
+                    if (shown[i] <= 0) continue;
+                    const top = probToY(shown[i]);
+                    const bh = bot - top;
+                    ctx.fillStyle = accent;
+                    ctx.globalAlpha = 0.7;
+                    ctx.fillRect(bx + i * binW + 1, top, binW - 2, bh);
+                }
+                ctx.globalAlpha = 1;
+
+                // uniform baseline
+                const uniY = probToY(uniP);
+                ctx.save();
+                ctx.setLineDash([6, 5]);
+                ctx.strokeStyle = muted;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(bx, uniY);
+                ctx.lineTo(bx + bw, uniY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+
+                ctx.font = WF.small;
+                ctx.fillStyle = muted;
+                ctx.textAlign = 'left';
+                ctx.fillText('uniform', bx + bw + 6, uniY + 4);
+            }
+
+            // user's sketched curve
+            if (stroke.length > 0) {
+                ctx.strokeStyle = accent;
+                ctx.lineWidth = 2.5;
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(stroke[0].x, stroke[0].y);
+                for (let i = 1; i < stroke.length; i++) ctx.lineTo(stroke[i].x, stroke[i].y);
+                ctx.stroke();
+            }
+
+            // axis labels
+            ctx.font = WF.label;
+            ctx.fillStyle = muted;
+            ctx.textAlign = 'left';
+            ctx.fillText('p(x)', 14, by + plotH / 2 + 4);
+            ctx.textAlign = 'center';
+            ctx.fillText('x', bx + bw / 2, Hc - 8);
+
+            if (phase === 'idle' && stroke.length === 0) {
+                ctx.fillStyle = muted;
+                ctx.font = 'italic ' + WF.hint;
+                ctx.fillText('sketch a pmf\u2026', bx + bw / 2, by + plotH / 2 + 5);
+            }
+
+            if (showEntropy && probs) {
+                const H = Hdist(probs);
+                readout.textContent =
+                    'H(X) = ' + H.toFixed(3) + ' bits   (uniform: ' + log2(N).toFixed(3) + ' bits)';
+            }
+        }
+
+        function tick(ts) {
+            if (!animStart) animStart = ts;
+            const elapsed = ts - animStart;
+            const stagger = 32;
+            const grow = 260;
+            let allDone = true;
+
+            for (let i = 0; i < N; i++) {
+                const local = elapsed - i * stagger;
+                if (local <= 0) {
+                    shown[i] = 0;
+                    allDone = false;
+                } else {
+                    const t = Math.min(1, local / grow);
+                    const ease = 1 - Math.pow(1 - t, 3);
+                    shown[i] = probs[i] * ease;
+                    if (t < 1) allDone = false;
+                }
+            }
+
+            draw();
+
+            if (!allDone) {
+                animId = requestAnimationFrame(tick);
+            } else {
+                phase = 'done';
+                showEntropy = true;
+                animId = null;
+                draw();
+            }
+        }
+
+        function commit() {
+            probs = sampleProbsFromStroke();
+            if (!probs) {
+                clearAll();
+                return;
+            }
+            shown.fill(0);
+            showEntropy = false;
+            readout.textContent = '';
+            phase = 'animating';
+            animStart = 0;
+            stopAnim();
+            animId = requestAnimationFrame(tick);
+        }
+
+        function onDown(e) {
+            e.preventDefault();
+            stopAnim();
+            stroke = [];
+            probs = null;
+            shown.fill(0);
+            showEntropy = false;
+            readout.textContent = '';
+            phase = 'drawing';
+            const pos = canvasPos(e);
+            stroke.push(clampPlot(pos.x, pos.y));
+            draw();
+        }
+
+        function onMove(e) {
+            if (phase !== 'drawing') return;
+            e.preventDefault();
+            const p = clampPlot(canvasPos(e).x, canvasPos(e).y);
+            const last = stroke[stroke.length - 1];
+            const dx = p.x - last.x, dy = p.y - last.y;
+            if (dx * dx + dy * dy < 9) return;
+            stroke.push(p);
+            draw();
+        }
+
+        function onUp() {
+            if (phase !== 'drawing') return;
+            if (stroke.length < 2) {
+                clearAll();
+                return;
+            }
+            commit();
+        }
+
+        canvas.addEventListener('mousedown', onDown);
+        canvas.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+        canvas.addEventListener('touchstart', onDown, { passive: false });
+        canvas.addEventListener('touchmove', onMove, { passive: false });
+        window.addEventListener('touchend', onUp);
+
+        window.addEventListener('load', draw);
+        ibRedraws.push(draw);
+    })();
+
+    // WIDGET
+    (function () {
+        const canvas = document.getElementById('mi-canvas');
+        const ctx = canvas.getContext('2d');
+        const slider = document.getElementById('mi-eps');
+
+        function draw() {
+            const eps = parseFloat(slider.value);
+            const HX = 1.0;
+            const HXgY = H2(eps);
+            const HYgX = H2(eps);
+            const I = HX - HXgY;
+
+            const fg = cssVar('--ib-fg'), accent = cssVar('--blue'),
+                  accent2 = cssVar('--ib-accent2'), muted = cssVar('--ib-muted');
+            const W = canvas.width, Hc = canvas.height;
+            ctx.clearRect(0, 0, W, Hc);
+
+            const bx = 70, bw = W - 140, by = 38, bh = 64;
+
+            ctx.fillStyle = accent;
+            ctx.fillRect(bx, by, bw * I, bh);
+            ctx.fillStyle = accent2;
+            ctx.fillRect(bx + bw * I, by, bw * HXgY, bh);
+            ctx.strokeStyle = fg;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(bx, by, bw, bh);
+
+            ctx.font = WF.axis;
+            ctx.fillStyle = fg;
+            ctx.textAlign = 'center';
+            ctx.fillText('H(X) = ' + HX.toFixed(3) + ' (bits)', bx + bw / 2, by - 10);
+
+            ctx.font = WF.small;
+            ctx.fillStyle = '#fff';
+            const iLab = 'I(X;Y) = ' + fmtI(I);
+            const hyLab = 'H(Y|X) = ' + HYgX.toFixed(3);
+            if (I > 0.14) {
+                ctx.fillText(iLab, bx + bw * I / 2, by + bh / 2 + 4);
+            }
+            if (HXgY > 0.14) {
+                ctx.fillText(hyLab, bx + bw * I + bw * HXgY / 2, by + bh / 2 + 4);
+            }
+        }
+
+        slider.addEventListener('input', draw);
+        window.addEventListener('load', draw);
+        ibRedraws.push(draw);
+    })();
+
+    // WIDGET
+    (function () {
+        const canvas = document.getElementById('kl-canvas');
+        const ctx = canvas.getContext('2d');
+        const mu1El = document.getElementById('kl-mu1');
+        const s1El = document.getElementById('kl-s1');
+        const mu2El = document.getElementById('kl-mu2');
+        const s2El = document.getElementById('kl-s2');
+
+        function gauss(x, mu, sigma) {
+            const z = (x - mu) / sigma;
+            return Math.exp(-0.5 * z * z) / (sigma * Math.sqrt(2 * Math.PI));
+        }
+
+        function klGauss(mu1, s1, mu2, s2) {
+            // KL(p||q) in nats
+            return Math.log(s2 / s1) + (s1 * s1 + (mu1 - mu2) * (mu1 - mu2)) / (2 * s2 * s2) - 0.5;
+        }
+
+        function draw() {
+            const mu1 = parseFloat(mu1El.value), s1 = parseFloat(s1El.value);
+            const mu2 = parseFloat(mu2El.value), s2 = parseFloat(s2El.value);
+
+            const blue = cssVar('--blue'),
+                  accent2 = cssVar('--ib-accent2'), ok = cssVar('--ib-ok'),
+                  muted = cssVar('--ib-muted');
+            const mono = WF.monoTitle;
+
+            function drawPanelTitle(text, cx, y) {
+                ctx.font = mono;
+                ctx.fillStyle = muted;
+                ctx.textAlign = 'center';
+                ctx.fillText(text.toUpperCase(), cx, y);
+            }
+
+            function drawIntegrandPanel(vals, x0, w, top, h, yAxisLabel, axisX) {
+                let posMax = 0, negMin = 0;
+                for (const f of vals) {
+                    if (f > 0) posMax = Math.max(posMax, f);
+                    else negMin = Math.min(negMin, f);
+                }
+                const scale = Math.max(posMax, -negMin, 1e-6) * 1.15;
+                const mid = top + h / 2;
+                const nSeg = vals.length - 1;
+                const xToLocal = i => x0 + (i / nSeg) * w;
+
+                ctx.strokeStyle = muted; ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x0, mid); ctx.lineTo(x0 + w, mid); ctx.stroke();
+                ctx.fillStyle = muted; ctx.font = WF.monoAxis;
+                ctx.textAlign = 'right';
+                ctx.fillText(yAxisLabel, axisX, top + 10);
+                ctx.textAlign = 'left';
+                ctx.fillText('0', x0 + 3, mid + 4);
+
+                for (let i = 0; i < nSeg; i++) {
+                    const xa = xToLocal(i), xb = xToLocal(i + 1);
+                    const f0 = vals[i], f1 = vals[i + 1];
+                    const y0 = mid - (f0 / scale) * (h / 2);
+                    const y1 = mid - (f1 / scale) * (h / 2);
+                    ctx.beginPath();
+                    ctx.moveTo(xa, mid); ctx.lineTo(xa, y0); ctx.lineTo(xb, y1); ctx.lineTo(xb, mid);
+                    ctx.closePath();
+                    const avg = (f0 + f1) / 2;
+                    ctx.fillStyle = avg >= 0 ? ok : accent2;
+                    ctx.globalAlpha = avg >= 0 ? 0.35 : 0.28;
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+            }
+
+            const W = canvas.width;
+            ctx.clearRect(0, 0, W, canvas.height);
+
+            const yLabPQ = 'p log(p/q)', yLabQP = 'q log(q/p)';
+            ctx.font = WF.monoAxis;
+            const yLabelW = Math.max(
+                ctx.measureText(yLabPQ).width,
+                ctx.measureText(yLabQP).width
+            );
+            const padL = Math.ceil(yLabelW) + 16;
+            const padR = 24;
+            const axisLabelX = padL - 8;
+            const plotW = W - padL - padR;
+            const intH = 50;
+
+            const pdfTop = 26, pdfH = 96;
+            const xLabelY = pdfTop + pdfH + 14;
+            const int1TitleY = xLabelY + 22;
+            const int1Top = int1TitleY + 12;
+            const int2TitleY = int1Top + intH + 18;
+            const int2Top = int2TitleY + 12;
+
+            const xMin = Math.min(mu1 - 3.5 * s1, mu2 - 3.5 * s2) - 0.4;
+            const xMax = Math.max(mu1 + 3.5 * s1, mu2 + 3.5 * s2) + 0.4;
+            const xToPx = x => padL + (x - xMin) / (xMax - xMin) * plotW;
+            const yToPx = (y, yMax, top, h) => top + h - (y / yMax) * h;
+
+            const N = 320;
+            const xs = [], pVals = [], qVals = [], intPQ = [], intQP = [];
+            let pdfMax = 0;
+            for (let i = 0; i <= N; i++) {
+                const x = xMin + (i / N) * (xMax - xMin);
+                const p = gauss(x, mu1, s1), q = gauss(x, mu2, s2);
+                xs.push(x); pVals.push(p); qVals.push(q);
+                pdfMax = Math.max(pdfMax, p, q);
+                intPQ.push(p > 1e-15 && q > 1e-15 ? p * Math.log(p / q) : 0);
+                intQP.push(p > 1e-15 && q > 1e-15 ? q * Math.log(q / p) : 0);
+            }
+            pdfMax *= 1.12;
+
+            // PDF panel
+            ctx.strokeStyle = muted; ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padL, pdfTop + pdfH); ctx.lineTo(padL + plotW, pdfTop + pdfH); ctx.stroke();
+            drawPanelTitle('pdfs', padL + plotW / 2, pdfTop - 6);
+            ctx.fillStyle = muted; ctx.font = WF.monoAxis; ctx.textAlign = 'center';
+            ctx.fillText('x', padL + plotW / 2, xLabelY);
+
+            ctx.lineWidth = 2;
+            function strokeCurve(vals, color) {
+                ctx.strokeStyle = color;
+                ctx.beginPath();
+                for (let i = 0; i <= N; i++) {
+                    const px = xToPx(xs[i]), py = yToPx(vals[i], pdfMax, pdfTop, pdfH);
+                    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+            }
+            strokeCurve(pVals, blue);
+            strokeCurve(qVals, accent2);
+
+            ctx.font = WF.label;
+            ctx.fillStyle = blue; ctx.textAlign = 'left';
+            ctx.fillText('p', xToPx(mu1 + 2.2 * s1), yToPx(gauss(mu1 + 2.2 * s1, mu1, s1), pdfMax, pdfTop, pdfH) - 6);
+            ctx.fillStyle = accent2;
+            ctx.fillText('q', xToPx(mu2 + 2.2 * s2), yToPx(gauss(mu2 + 2.2 * s2, mu2, s2), pdfMax, pdfTop, pdfH) - 6);
+
+            const klPQ = klGauss(mu1, s1, mu2, s2);
+            const klQP = klGauss(mu2, s2, mu1, s1);
+
+            drawPanelTitle('D(p || q) = ' + klPQ.toFixed(3), padL + plotW / 2, int1TitleY);
+            drawIntegrandPanel(intPQ, padL, plotW, int1Top, intH, yLabPQ, axisLabelX);
+
+            drawPanelTitle('D(q || p) = ' + klQP.toFixed(3), padL + plotW / 2, int2TitleY);
+            drawIntegrandPanel(intQP, padL, plotW, int2Top, intH, yLabQP, axisLabelX);
+        }
+
+        [mu1El, s1El, mu2El, s2El].forEach(el => el.addEventListener('input', draw));
+        window.addEventListener('load', draw);
+        ibRedraws.push(draw);
+    })();
+
+    // WIDGET
+    (function () {
+        const NX = 8, NY = 2, NT = 3; // NT = |Xtilde|
+        const px = new Array(NX).fill(1 / NX);
+        const pyGx = [0.05, 0.10, 0.15, 0.50, 0.55, 0.85, 0.90, 0.95].map(p => [1 - p, p]);
+
+        // I(X;Y) ceiling
+        const py = [0, 1].map(y => pyGx.reduce((s, row, x) => s + px[x] * row[y], 0));
+        const IXY = pyGx.reduce((s, row, x) =>
+            s + px[x] * row.reduce((t, p, y) => p > 0 ? t + p * log2(p / py[y]) : t, 0), 0);
+
+        function klRows(p, q) { // KL(p||q) for prob vectors
+            let s = 0;
+            for (let i = 0; i < p.length; i++) if (p[i] > 0) s += p[i] * log2(p[i] / (q[i] || 1e-12));
+            return s;
+        }
+
+        // one full converged IB solve at given beta, warm-started from enc
+        function ibSolve(beta, enc) {
+            // enc: NX x NT matrix p(t|x)
+            for (let iter = 0; iter < 200; iter++) {
+                // p(t)
+                const pt = new Array(NT).fill(0);
+                for (let x = 0; x < NX; x++) for (let t = 0; t < NT; t++) pt[t] += px[x] * enc[x][t];
+                // p(y|t)
+                const pyGt = [];
+                for (let t = 0; t < NT; t++) {
+                    const row = [0, 0];
+                    if (pt[t] > 1e-12) {
+                        for (let x = 0; x < NX; x++) {
+                            const w = px[x] * enc[x][t] / pt[t];
+                            row[0] += w * pyGx[x][0]; row[1] += w * pyGx[x][1];
+                        }
+                    } else { row[0] = py[0]; row[1] = py[1]; }
+                    pyGt.push(row);
+                }
+                // update encoder
+                let maxDelta = 0;
+                for (let x = 0; x < NX; x++) {
+                    const logits = [];
+                    for (let t = 0; t < NT; t++) {
+                        logits.push(Math.log(pt[t] + 1e-12) - beta * Math.LN2 * klRows(pyGx[x], pyGt[t]));
+                    }
+                    const m = Math.max(...logits);
+                    let Z = 0;
+                    const ne = logits.map(l => { const e = Math.exp(l - m); Z += e; return e; });
+                    for (let t = 0; t < NT; t++) {
+                        const v = ne[t] / Z;
+                        maxDelta = Math.max(maxDelta, Math.abs(v - enc[x][t]));
+                        enc[x][t] = v;
+                    }
+                }
+                if (maxDelta < 1e-8) break;
+            }
+            // compute Ix, Iy
+            const pt = new Array(NT).fill(0);
+            for (let x = 0; x < NX; x++) for (let t = 0; t < NT; t++) pt[t] += px[x] * enc[x][t];
+            let Ix = 0;
+            for (let x = 0; x < NX; x++) for (let t = 0; t < NT; t++) {
+                if (enc[x][t] > 1e-12 && pt[t] > 1e-12) Ix += px[x] * enc[x][t] * log2(enc[x][t] / pt[t]);
+            }
+            const pyGt = [];
+            for (let t = 0; t < NT; t++) {
+                const row = [0, 0];
+                if (pt[t] > 1e-12) {
+                    for (let x = 0; x < NX; x++) {
+                        const w = px[x] * enc[x][t] / pt[t];
+                        row[0] += w * pyGx[x][0]; row[1] += w * pyGx[x][1];
+                    }
+                } else { row[0] = py[0]; row[1] = py[1]; }
+                pyGt.push(row);
+            }
+            let Iy = 0;
+            for (let t = 0; t < NT; t++) for (let y = 0; y < NY; y++) {
+                if (pyGt[t][y] > 1e-12 && pt[t] > 1e-12) Iy += pt[t] * pyGt[t][y] * log2(pyGt[t][y] / py[y]);
+            }
+            return { Ix, Iy };
+        }
+
+        // beta grid (log-spaced), deterministic annealing with tiny symmetry-breaking noise
+        const NB = 101;
+        const betas = [];
+        for (let i = 0; i < NB; i++) betas.push(0.1 * Math.pow(400, i / (NB - 1))); // 0.1 .. 40
+        const solutions = []; // {Ix, Iy, enc}
+        (function precompute() {
+            // seeded pseudo-random init
+            let seed = 42;
+            const rand = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+            let enc = [];
+            for (let x = 0; x < NX; x++) {
+                const row = []; let s = 0;
+                for (let t = 0; t < NT; t++) { const v = 0.8 + 0.4 * rand(); row.push(v); s += v; }
+                enc.push(row.map(v => v / s));
+            }
+            for (let i = 0; i < NB; i++) {
+                // perturb slightly to allow bifurcations
+                enc = enc.map(row => {
+                    let s = 0;
+                    const r = row.map(v => { const u = v + 1e-3 * rand(); s += u; return u; });
+                    return r.map(v => v / s);
+                });
+                const { Ix, Iy } = ibSolve(betas[i], enc);
+                solutions.push({ Ix, Iy, enc: enc.map(r => r.slice()) });
+            }
+        })();
+
+        const canvas = document.getElementById('ib-canvas');
+        const ctx = canvas.getContext('2d');
+        const slider = document.getElementById('ib-beta');
+        const readout = document.getElementById('ib-readout');
+        const miReadout = document.getElementById('ib-mi-readout');
+        const hmDiv = document.getElementById('ib-heatmap');
+
+        function draw() {
+            const idx = parseInt(slider.value);
+            const sol = solutions[idx];
+            const fg = cssVar('--ib-fg'), accent = cssVar('--blue'),
+                  accent2 = cssVar('--ib-accent2'), muted = cssVar('--ib-muted');
+
+            const W = canvas.width, Hc = canvas.height;
+            ctx.clearRect(0, 0, W, Hc);
+            const mL = 64, mR = 20, mT = 20, mB = 44;
+            const pw = W - mL - mR, ph = Hc - mT - mB;
+            const maxIx = Math.max(...solutions.map(s => s.Ix)) * 1.1 + 1e-6;
+            const maxIy = IXY * 1.15;
+            const X = v => mL + pw * v / maxIx;
+            const Y = v => mT + ph * (1 - v / maxIy);
+
+            // axes
+            ctx.strokeStyle = muted; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(mL, mT); ctx.lineTo(mL, mT + ph); ctx.lineTo(mL + pw, mT + ph); ctx.stroke();
+            ctx.fillStyle = fg; ctx.font = WF.axis; ctx.textAlign = 'center';
+            ctx.fillText('I(X; X\u0303)  [bits]', mL + pw / 2, Hc - 12);
+            ctx.save();
+            ctx.translate(16, mT + ph / 2); ctx.rotate(-Math.PI / 2);
+            ctx.fillText('I(X\u0303; Y)  [bits]', 0, 0);
+            ctx.restore();
+
+            // ceiling I(X;Y)
+            ctx.strokeStyle = muted;
+            ctx.setLineDash([5, 4]);
+            ctx.beginPath(); ctx.moveTo(mL, Y(IXY)); ctx.lineTo(mL + pw, Y(IXY)); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.textAlign = 'left';
+            ctx.fillStyle = muted;
+            ctx.fillText('I(X;Y) = ' + fmtI(IXY), mL + 6, Y(IXY) - 6);
+
+            // curve points
+            for (let i = 0; i < NB; i++) {
+                ctx.fillStyle = accent;
+                ctx.globalAlpha = 0.55;
+                ctx.beginPath();
+                ctx.arc(X(solutions[i].Ix), Y(solutions[i].Iy), 2.5, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+
+            // current point
+            ctx.fillStyle = accent2;
+            ctx.beginPath();
+            ctx.arc(X(sol.Ix), Y(sol.Iy), 6, 0, 2 * Math.PI);
+            ctx.fill();
+
+            readout.textContent = '(' + betas[idx].toFixed(2) + ')';
+
+            miReadout.innerHTML =
+                'I(X;X\u0303) = ' + fmtI(sol.Ix) + '<br>' +
+                'I(X\u0303;Y) = ' + fmtI(sol.Iy);
+
+            // heatmap table
+            let html = '<table class="hm"><tr><td class="hdr"></td>';
+            for (let t = 0; t < NT; t++) html += '<td class="hdr">x\u0303' + (t + 1) + '</td>';
+            html += '<td class="hdr" style="padding-left:10px;">p(y=1|x)</td></tr>';
+            for (let x = 0; x < NX; x++) {
+                html += '<tr><td class="hdr">x' + (x + 1) + '</td>';
+                for (let t = 0; t < NT; t++) {
+                    const v = sol.enc[x][t];
+                    const c = Math.round(255 - v * 200);
+                    html += '<td style="background:rgb(' + c + ',' + Math.round(255 - v * 130) + ',255);color:#111;">' + v.toFixed(2) + '</td>';
+                }
+                html += '<td class="hdr" style="padding-left:10px;">' + pyGx[x][1].toFixed(2) + '</td></tr>';
+            }
+            html += '</table>';
+            hmDiv.innerHTML = html;
+        }
+
+        slider.addEventListener('input', draw);
+        window.addEventListener('load', draw);
+        ibRedraws.push(draw);
+    })();
+
+    // WIDGET
+    (function () {
+        const canvas = document.getElementById('dnn-canvas');
+        const ctx = canvas.getContext('2d');
+        const slider = document.getElementById('dnn-epoch');
+        const readout = document.getElementById('dnn-readout');
+
+        // stylized IB limit curve: Iy = IXY * (1 - exp(-k Ix))
+        const IXY = 1.0, k = 3.0, maxIx = 4.0;
+        const limit = ix => IXY * (1 - Math.exp(-k * Math.max(0, ix)));
+
+        const layers = [
+            { s: [3.6, 0.07], p: [3.9, 0.95],  e: [3.30, 0.965] }, // h1
+            { s: [3.0, 0.06], p: [3.3, 0.945], e: [2.60, 0.960] }, // h2
+            { s: [2.4, 0.05], p: [2.7, 0.930], e: [1.90, 0.950] }, // h3
+            { s: [1.8, 0.05], p: [2.1, 0.900], e: [1.25, 0.930] }, // h4
+            { s: [1.4, 0.04], p: [1.6, 0.830], e: [0.85, 0.850] }, // ŷ
+        ];
+
+        const FIT = 0.2; // fitting is brief; compression takes the rest of training
+        function lerp(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; }
+        function clampIB([ix, iy]) {
+            return [ix, Math.min(iy, limit(ix) - 0.012)]; // safety: stay just below the IB limit
+        }
+        function pos(layer, prog) {
+            let pt;
+            if (prog < FIT) pt = lerp(layer.s, layer.p, prog / FIT);
+            else pt = lerp(layer.p, layer.e, (prog - FIT) / (1 - FIT));
+            return clampIB(pt);
+        }
+
+        function draw() {
+            const prog = parseInt(slider.value) / 100;
+            const fg = cssVar('--ib-fg'), accent = cssVar('--blue'),
+                  accent2 = cssVar('--ib-accent2'), muted = cssVar('--ib-muted');
+            const W = canvas.width, Hc = canvas.height;
+            ctx.clearRect(0, 0, W, Hc);
+            const mL = 64, mR = 20, mT = 20, mB = 44;
+            const pw = W - mL - mR, ph = Hc - mT - mB;
+            const X = v => mL + pw * v / maxIx;
+            const Y = v => mT + ph * (1 - v / (IXY * 1.1));
+
+            // axes
+            ctx.strokeStyle = muted; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(mL, mT); ctx.lineTo(mL, mT + ph); ctx.lineTo(mL + pw, mT + ph); ctx.stroke();
+            ctx.fillStyle = fg; ctx.font = WF.axis; ctx.textAlign = 'center';
+            ctx.fillText('I(X; h)  [compression \u2190]', mL + pw / 2, Hc - 12);
+            ctx.save(); ctx.translate(16, mT + ph / 2); ctx.rotate(-Math.PI / 2);
+            ctx.fillText('I(Y; h)  [relevance \u2192]', 0, 0); ctx.restore();
+
+            // IB limit
+            ctx.strokeStyle = fg; ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i <= 100; i++) {
+                const ix = maxIx * i / 100;
+                const x = X(ix), y = Y(limit(ix));
+                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            const pts = layers.map(l => pos(l, prog));
+
+            ctx.strokeStyle = '#3a9d4b'; ctx.globalAlpha = 0.55; ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            for (let li = 0; li < pts.length; li++) {
+                const x = X(pts[li][0]), y = Y(pts[li][1]);
+                li === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+
+            // trails + layer points
+            for (let li = 0; li < layers.length; li++) {
+                // trail
+                ctx.strokeStyle = accent; ctx.globalAlpha = 0.3; ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                for (let i = 0; i <= 40; i++) {
+                    const t = prog * i / 40;
+                    const [ix, iy] = pos(layers[li], t);
+                    const x = X(ix), y = Y(iy);
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+                // point
+                const [ix, iy] = pts[li];
+                ctx.fillStyle = li === layers.length - 1 ? accent2 : accent;
+                ctx.beginPath(); ctx.arc(X(ix), Y(iy), 5.5, 0, 2 * Math.PI); ctx.fill();
+                ctx.fillStyle = fg; ctx.font = WF.tag; ctx.textAlign = 'center';
+                ctx.fillText(li === layers.length - 1 ? '\u0177' : 'h' + (li + 1), X(ix), Y(iy) - 9);
+            }
+
+            const phase = prog < FIT ? 'fitting phase' : 'compression phase';
+            readout.textContent = phase;
+        }
+
+        slider.addEventListener('input', draw);
+        window.addEventListener('load', draw);
+        ibRedraws.push(draw);
+    })();
+
+    // WIDGET
+    (function () {
+        const canvas = document.getElementById('dgib-canvas');
+        const ctx = canvas.getContext('2d');
+        const cbA = document.getElementById('dgib-aib');
+        const cbX = document.getElementById('dgib-xib');
+        const cbC = document.getElementById('dgib-cons');
+        const status = document.getElementById('dgib-status');
+
+        const nodes = [
+            { x: 0.18, y: 0.26, cls: 0 }, { x: 0.50, y: 0.14, cls: 0 }, { x: 0.80, y: 0.30, cls: 0 },
+            { x: 0.20, y: 0.76, cls: 1 }, { x: 0.50, y: 0.90, cls: 1 }, { x: 0.82, y: 0.74, cls: 1 },
+        ];
+        const persistent = [[0, 1], [1, 2], [3, 4], [4, 5]];
+        const transient = [[[0, 2]], [[3, 5]], [[1, 3]]];
+        const noise = [[[0, 4]], [[2, 3]], [[0, 5]]];
+        const goodPred = [0, 2];
+        const badPred = [0, 5];
+   
+
+        // deterministic per-(snapshot,node) feature-noise jitter
+        let seed = 7;
+        const rand = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+        const jitter = [];
+        for (let t = 0; t < 3; t++) {
+            jitter.push(nodes.map(() => (rand() - 0.5)));
+        }
+
+        function mix(hexA, hexB, t) { // crude hex blend
+            const pa = [1, 3, 5].map(i => parseInt(hexA.slice(i, i + 2), 16));
+            const pb = [1, 3, 5].map(i => parseInt(hexB.slice(i, i + 2), 16));
+            const m = pa.map((v, i) => Math.round(v + (pb[i] - v) * t));
+            return 'rgb(' + m.join(',') + ')';
+        }
+
+        function drawPanel(ox, oy, pw, ph, t, opts) {
+            const { fg, accent, accent2, warm, muted } = opts;
+            const px = n => ox + 12 + (pw - 24) * nodes[n].x;
+            const py = n => oy + 8 + (ph - 16) * nodes[n].y;
+            const edge = (e, style) => {
+                ctx.strokeStyle = style.color;
+                ctx.lineWidth = style.w;
+                ctx.globalAlpha = style.a;
+                ctx.setLineDash(style.dash || []);
+                ctx.beginPath(); ctx.moveTo(px(e[0]), py(e[0])); ctx.lineTo(px(e[1]), py(e[1])); ctx.stroke();
+                ctx.setLineDash([]); ctx.globalAlpha = 1;
+            };
+
+            // persistent: highlighted when consensus on
+            persistent.forEach(e => edge(e, cbC.checked
+                ? { color: accent, w: 2.8, a: 0.95 }
+                : { color: fg, w: 1.4, a: 0.6 }));
+            // transient
+            transient[t].forEach(e => edge(e, { color: muted, w: 1.2, a: 0.7 }));
+            // noise: compressed away when AIB on
+            noise[t].forEach(e => edge(e, cbA.checked
+                ? { color: accent2, w: 1.2, a: 0.15, dash: [3, 4] }
+                : { color: accent2, w: 2.2, a: 0.95 }));
+
+            // nodes
+            for (let n = 0; n < nodes.length; n++) {
+                const base = nodes[n].cls === 0 ? accent : warm;
+                let fill = base;
+                if (!cbX.checked) {
+                    // noisy features: blend toward the "wrong" community color
+                    const other = nodes[n].cls === 0 ? warm : accent;
+                    const amt = 0.25 + 0.45 * Math.abs(jitter[t][n]);
+                    fill = mix(rgbToHex(base), rgbToHex(other), amt);
+                }
+                ctx.fillStyle = fill;
+                ctx.beginPath(); ctx.arc(px(n), py(n), 7, 0, 2 * Math.PI); ctx.fill();
+                ctx.strokeStyle = fg; ctx.lineWidth = 0.8; ctx.globalAlpha = 0.5;
+                ctx.stroke(); ctx.globalAlpha = 1;
+            }
+        }
+
+        // cssVar values may be hex or not; normalize via a scratch canvas trick
+        let scratch = null;
+        function rgbToHex(color) {
+            if (color.startsWith('#') && color.length === 7) return color;
+            if (!scratch) scratch = document.createElement('canvas').getContext('2d');
+            scratch.fillStyle = color;
+            return scratch.fillStyle; // canvas normalizes to #rrggbb for simple colors
+        }
+
+        function drawPredPanel(ox, oy, pw, ph, opts) {
+            const { fg, accent, accent2, ok, warm, muted } = opts;
+            const px = n => ox + 12 + (pw - 24) * nodes[n].x;
+            const py = n => oy + 8 + (ph - 16) * nodes[n].y;
+
+            // faded nodes
+            ctx.globalAlpha = 0.45;
+            for (let n = 0; n < nodes.length; n++) {
+                ctx.fillStyle = nodes[n].cls === 0 ? accent : warm;
+                ctx.beginPath(); ctx.arc(px(n), py(n), 7, 0, 2 * Math.PI); ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+            // faded persistent pattern for reference
+            ctx.strokeStyle = muted; ctx.lineWidth = 1; ctx.globalAlpha = 0.3;
+            persistent.forEach(e => {
+                ctx.beginPath(); ctx.moveTo(px(e[0]), py(e[0])); ctx.lineTo(px(e[1]), py(e[1])); ctx.stroke();
+            });
+            ctx.globalAlpha = 1;
+
+            // predicted link
+            const e = cbC.checked ? goodPred : badPred;
+            ctx.strokeStyle = cbC.checked ? ok : accent2;
+            ctx.lineWidth = 3;
+            ctx.setLineDash([7, 5]);
+            ctx.beginPath(); ctx.moveTo(px(e[0]), py(e[0])); ctx.lineTo(px(e[1]), py(e[1])); ctx.stroke();
+            ctx.setLineDash([]);
+            // verdict mark
+            ctx.fillStyle = cbC.checked ? ok : accent2;
+            ctx.font = 'bold ' + WF.label; ctx.textAlign = 'center';
+            const mx = (px(e[0]) + px(e[1])) / 2, my = (py(e[0]) + py(e[1])) / 2;
+            ctx.fillText(cbC.checked ? '\u2713' : '?', mx + 10, my - 6);
+        }
+
+        function draw() {
+            const opts = {
+                fg: cssVar('--ib-fg'), accent: cssVar('--blue'),
+                accent2: cssVar('--ib-accent2'), ok: cssVar('--ib-ok'),
+                warm: cssVar('--ib-warm'), muted: cssVar('--ib-muted'),
+            };
+            const W = canvas.width, Hc = canvas.height;
+            ctx.clearRect(0, 0, W, Hc);
+
+            const gap = 14, mT = 30, mB = 26;
+            const pw = (W - 5 * gap) / 4, ph = Hc - mT - mB;
+
+            for (let t = 0; t < 3; t++) {
+                const ox = gap + t * (pw + gap);
+                // panel frame
+                ctx.strokeStyle = opts.muted; ctx.lineWidth = 1; ctx.globalAlpha = 0.4;
+                ctx.strokeRect(ox, mT, pw, ph); ctx.globalAlpha = 1;
+                ctx.fillStyle = opts.fg; ctx.font = 'italic ' + WF.label; ctx.textAlign = 'center';
+                ctx.fillText('G' + '\u00B9\u00B2\u00B3'[t], ox + pw / 2, mT - 8);
+                drawPanel(ox, mT, pw, ph, t, opts);
+                // arrow between panels
+                ctx.fillStyle = opts.muted; ctx.font = WF.axis;
+                ctx.fillText('\u2192', ox + pw + gap / 2, mT + ph / 2 + 5);
+            }
+            // prediction panel
+            const ox = gap + 3 * (pw + gap);
+            ctx.strokeStyle = opts.muted; ctx.lineWidth = 1; ctx.globalAlpha = 0.4;
+            ctx.strokeRect(ox, mT, pw, ph); ctx.globalAlpha = 1;
+            ctx.fillStyle = opts.fg; ctx.font = 'italic ' + WF.label; ctx.textAlign = 'center';
+            ctx.fillText('Z\u1D40\u207A\u00B9 \u2192 \u0176\u1D40\u207A\u00B9', ox + pw / 2, mT - 8);
+            drawPredPanel(ox, mT, pw, ph, opts);
+
+            // status text
+            const a = cbA.checked, x = cbX.checked, c = cbC.checked;
+            let msg;
+            if (!a && !x && !c) {
+                msg = 'Nothing on: the representation keeps everything, attack edges and feature noise included. Maximally expressive, maximally brittle.';
+            } else if (a && x && c) {
+                msg = 'Everything on: edge noise and feature noise are both dropped, and consensus keeps the shared cross-snapshot pattern.';
+            } else if (a && x && !c) {
+                msg = 'Compressing but not agreeing: each snapshot is tidied up on its own, but nothing forces them to agree, so the prediction just latches onto the last one.';
+            } else if (!a && !x && c) {
+                msg = 'Agreeing but not compressing: the snapshots settle on a shared pattern, but the noise is never removed, so it can still be exploited.';
+            } else {
+                msg = 'Partial compression: some noise still gets through. Each term defends a different attack surface, so leaving one off leaves a gap that can be exploited.';
+            }
+            status.textContent = msg;
+        }
+
+        [cbA, cbX, cbC].forEach(cb => cb.addEventListener('change', draw));
+        window.addEventListener('load', draw);
+        ibRedraws.push(draw);
+    })();
+
+    // EQUATIONS
+    function wireTerms(widgetId, panelId, texts) {
+        const widget = document.getElementById(widgetId);
+        const panel = document.getElementById(panelId);
+        widget.querySelectorAll('.term').forEach(term => {
+            term.addEventListener('click', () => {
+                widget.querySelectorAll('.term').forEach(t => t.classList.remove('sel'));
+                term.classList.add('sel');
+                panel.innerHTML = texts[term.dataset.key];
+                renderMath(panel);
+            });
+        });
+    }
+
+    const ibTexts = {
+        L: '<b>Functional</b> minimized over all stochastic encoders $p(\\tilde{x}\\mid x)$. Note the optimization variable is a conditional <i>distribution</i>, not a deterministic map.',
+        comp: '<b>Compression:</b> the number of bits the representation keeps about the raw signal; the minimal codebook rate. Minimizing this pushes toward forgetting.',
+        beta: '<b>The tradeoff parameter:</b> a Lagrange multiplier trading compression against relevance. As $\\beta \\to 0$, everything maps to a single codeword. As $\\beta \\to \\infty$, we get arbitrarily fine quantization with no compression. $\\beta$ is also the inverse slope of the optimal information curve.',
+        rel: '<b>Relevance:</b> how much the representation still says about $Y$. Maximizing this pushes toward remembering.'
+    };
+
+    const dgibTexts = {
+        total: '<b>The full objective:</b> a weighted sum of two channels, with $\\alpha$ setting the balance. Both have the usual IB shape (relevance minus $\\beta$ times compression); they just compress against different things.',
+        ms: '<b>The minimal-sufficient channel</b>: stay predictive of the future label $Y^{T+1}$ while compressing away everything else in the whole history $\\mathcal{D}$. This is the same "minimal sufficient statistic" goal as before, now stretched across snapshots.',
+        c: '<b>The consensual channel</b>: instead of compressing against the raw input, compress the final representation $Z^{T+1}$ against the earlier ones $Z^{1:T}$, forcing every time step to agree on one shared pattern. Without this, each step quietly optimizes for itself and the final representation comes out worse.'
+    };
+
+    window.addEventListener('load', () => {
+        renderMath();
+        wireTerms('ib-eq-widget', 'ib-eq-panel', ibTexts);
+        wireTerms('dgib-eq-widget', 'dgib-eq-panel', dgibTexts);
+    });
+    </script>
+</body>
+</html>
