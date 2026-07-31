@@ -198,8 +198,28 @@ h1 {
 }
 
 .toggle-button:hover {
-    cursor: grab;
+    cursor: pointer;
+}
+
+.toggle-button:hover .toggle-label {
     text-decoration: underline;
+}
+
+.toggle-button .chevron {
+    display: inline-block;
+    width: 0.32em;
+    height: 0.32em;
+    margin-left: 0.35em;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(-45deg);
+    vertical-align: 0.12em;
+    transition: transform 0.15s ease, vertical-align 0.15s ease;
+}
+
+.toggle-button.open .chevron {
+    transform: rotate(45deg);
+    vertical-align: 0.2em;
 }
 
 .toggle-list {
