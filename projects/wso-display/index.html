@@ -43,6 +43,10 @@
             display: block;
         }
 
+        .scroll span.special-word {
+            line-height: 1.1;
+        }
+
     </style>
 </head>
 <body>
@@ -63,8 +67,20 @@
 
         var pauses = [false, false, false];
         var doPauses = [false, false, false];
-        function createScrollingContent(containerID, scrollSpeed, words, specialWord, index) {
-            const CONTENT_AMT = 22; // harcoded for display, may stil have funny fullscreen behavior
+        const LINE_HEIGHT = 48;
+        const SPECIAL_HEIGHT = 36 * 4.5 * 1.1 + 10; // 450% of 36px, line-height 1.1, + padding
+        function getLayout() {
+            const vh = window.innerHeight;
+            const spansBefore = Math.max(2, Math.round((vh - SPECIAL_HEIGHT) / 2 / LINE_HEIGHT));
+            const spansAfter = Math.max(4, Math.ceil((vh - SPECIAL_HEIGHT) / 2 / LINE_HEIGHT) + 4);
+            return {
+                contentAmt: spansBefore + 1 + spansAfter,
+                specialIndex: spansBefore + 1 // arr[0] is the wrapping <div>
+            };
+        }
+        function createScrollingContent(containerID, scrollSpeed, words, specialWord, index, layout) {
+            const CONTENT_AMT = layout.contentAmt;
+            const specialIndex = layout.specialIndex;
             const container = document.getElementById(containerID);
             const scrollDiv = document.createElement('div');
             scrollDiv.classList.add('scroll');
@@ -76,10 +92,10 @@
                     arr.push(`<span>${words[Math.floor(Math.random() * words.length)].toLowerCase()}</span>`);
                 }
                 arr.push('</div>');
-                arr[num/2] = '<span style="font-family:\'Georgia\', serif;padding:5px;color:rgb(80, 0, 130);background-color:rgb(255, 190, 10);font-size:450%;">' + specialWord + '</span>';
+                arr[specialIndex] = '<span class="special-word" style="font-family:\'Georgia\', serif;padding:5px;color:rgb(80, 0, 130);background-color:rgb(255, 190, 10);font-size:450%;">' + specialWord + '</span>';
                 if (index == 1) {
-                    arr[num/2+1] = '<span style="font-family:\'Georgia\', serif;padding:5px;font-size:225%;"><u><b>' + 'tinyurl.com/wsopkf' + '</u></b></span>';
-                    arr[num/2+2] = '<span style="color:rgb(80, 0, 130);">a</span>';
+                    arr[specialIndex+1] = '<span style="font-family:\'Georgia\', serif;padding:5px;font-size:225%;line-height:1.2;"><u><b>' + 'tinyurl.com/wsopkf2026' + '</u></b></span>';
+                    arr[specialIndex+2] = '<span style="color:rgb(80, 0, 130);">a</span>';
                 }
                 return arr.join('');
             }
@@ -91,16 +107,22 @@
             let scrollHeight = scrollDiv.scrollHeight / 2;
             let offset = 0;
 
+            function centerOffset() {
+                const el = scrollDiv.querySelector('.special-word');
+                if (!el) return 0;
+                return Math.max(0, el.offsetTop + el.offsetHeight / 2 - window.innerHeight / 2);
+            }
+
             function animateScroll() {
                 if (!pauses[index]) {
                     offset += Math.abs(scrollSpeed);
                     
                     if (scrollHeight - offset <= scrollSpeed) {
-                        offset = scrollHeight;
                         pauses[index] = true;
                         scrollDiv.innerHTML = scrollDiv.innerHTML.replace(/^(<div>.*?<\/div>)/, '');
                         scrollDiv.innerHTML += generateContent(CONTENT_AMT);
-                        offset = 0;
+                        scrollHeight = scrollDiv.scrollHeight / 2;
+                        offset = centerOffset();
                     }
 
                     scrollDiv.style.top = `${-offset}px`;
@@ -128,9 +150,10 @@
         document.addEventListener('DOMContentLoaded', async (event) => {
             words_data = await readJSON();
 
-            createScrollingContent('column1', 4, words_data.w, 'WILLIAMS', 0);
-            createScrollingContent('column2', 3, words_data.s, 'STUDENTS', 1);
-            createScrollingContent('column3', 2, words_data.o, 'ONLINE', 2);
+            const layout = getLayout();
+            createScrollingContent('column1', 4, words_data.w, 'WILLIAMS', 0, layout);
+            createScrollingContent('column2', 3, words_data.s, 'STUDENTS', 1, layout);
+            createScrollingContent('column3', 2, words_data.o, 'ONLINE', 2, layout);
         });
     </script>
 </body>
