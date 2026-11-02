@@ -197,7 +197,7 @@
     <div class="content">
         <h2>Preamble</h2>
         <p>
-            Most foundational of all the quantities described by information theory is the <b>entropy</b> of a random variable, $H(X) = -\sum_x p(x)\log p(x)$ which can be thought of as measuring its uncertainty. Entropy is maximized by a uniform distribution: when all outcomes are equally likely, uncertainty is maximized. The entropy also tells us how many bits (on average) it takes for an optimal encoder to specify an outcome of $X$.
+            Most foundational of all the quantities described by information theory is the <b>entropy</b> of a random variable, $H(X) = -\sum_x p(x)\log p(x)$, which can be thought of as measuring its uncertainty. Entropy is maximized by a uniform distribution: when all outcomes are equally likely, uncertainty is maximized. The entropy also tells us how many bits (on average) it takes for an optimal encoder to specify an outcome of $X$.
         </p>
 
         <p>
@@ -211,12 +211,12 @@
         </div>
 
         <p>
-            Ideally, we would like to be able to do more than just measure the uncertainty of a single random variable. The <b>conditional entropy</b> $H(X \mid Y)$ is the uncertainty that remains about $X$ after observing some (possibly related) $Y$; if $Y$ has nothing to do with $X$ (i.e. they are independent) then $H(X \mid Y) = H(X)$, otherwise, we'll always learn <i>something</i>, so in general $H(X \mid Y) \le H(X)$. 
+            Of course, we would like to be able to do more than just measure the uncertainty of a single random variable. The <b>conditional entropy</b> $H(X \mid Y)$ is the uncertainty that remains about $X$ after observing some (possibly related) $Y$; if $Y$ has nothing to do with $X$ (i.e. they are independent) then $H(X \mid Y) = H(X)$, otherwise, we'll always learn <i>something</i>, so in general $H(X \mid Y) \le H(X)$. 
             To measure exactly how much we have learned, we can simply take the difference between standard and conditional entropy. We call this the <b>mutual information</b> $I(X;Y)$, and it tells us how much knowing $Y$ reduces our uncertainty about $X$:
         </p>
             $$I(X;Y) = H(X) - H(X \mid Y) = \sum_{x,y} p(x,y)\log\frac{p(x,y)}{p(x)\,p(y)} = D\!\left[\,p(x,y)\,\|\,p(x)p(y)\,\right]$$
         <p>
-            Mutual information is measured by the (Kullback-Leibler) <b>divergence</b> between the probabilities of (a) seeing both events at the same time and (b) seeing them at the same time, assuming they were independent. So if both events were really independent, then the "difference" between what you saw and what you would have seen were they actually independent is zero, and there isn't any mutual information between them. By contrast, dependent events would have higher mutual information, since their joint distribution would differ a fair bit from the joint distribution were they independent.
+            Mutual information is measured by the (Kullback-Leibler) <b>divergence</b> between the probabilities of (a) seeing both events at the same time and (b) seeing both events at the same time, assuming they were independent. So if both events were really independent, then the "difference" between what you saw and what you would have seen were they actually independent is zero, and there isn't any mutual information between them. By contrast, dependent events would have higher mutual information, since their joint distribution would differ a fair bit from the joint distribution were they independent.
         </p>
         <p>
             Divergence is a weird notion of "distance" or "difference" to wrap your head around, though--for starters, it's not symmetric, and it scales somewhat unintuitively. The interactive below shows how it behaves for two Gaussians.
@@ -254,12 +254,12 @@
                 <input type="range" id="mi-eps" min="0" max="0.5" step="0.005" value="0.1">
             </div>
             <div class="caption">
-                Notice how $H(X)$ is constant: we will always be equally uncertain about a fair coinflip. We might be uncertain because we saw it correctly, or uncertain because it's a fair coinflip 
+                Notice how $H(X)$ is constant: we will always be equally uncertain about a fair coinflip. What changes is the <i>reason</i> for our uncertainty, and how much remains after observing the coin.
             </div>
         </div>
 
         <p>
-            One last ingredient: as we model increasingly complex processes--including, later, the layers of a neural network itself--we will make use of <b>Markov chains</b>, systems that whose transitions between <i>states</i> are specified by <i>transition probabilities</i>, and where the future depends on the present only through the current state. When random variables form such a chain, written $A \to B \to C$, we mean that $C$ depends on $A$ only through $B$.
+            One last ingredient: as we model increasingly complex processes--including, later, the layers of a neural network itself--we will make use of <b>Markov chains</b>, systems that whose transitions between <i>states</i> are specified by <i>transition probabilities</i>, where the future depends on the present only through the current state. When random variables form such a chain, written $A \to B \to C$, we mean that $C$ depends on $A$ only through $B$.
         </p>
         <p>
             This Markov structure immediately gives the <b>data processing inequality</b> (DPI), which states that processing data can only destroy information: $I(A;B) \ge I(A;C)$. In other words, we can't magically gain information at some intermediate processing step; all the information that we work with comes from the source distribution(s) furthest up the chain. The DPI will do some heavy lifting in the following sections.
@@ -270,15 +270,13 @@
         <h2>The information bottleneck</h2>
         <p>
             Classic lossy compression is formalized by <a href="https://en.wikipedia.org/wiki/Rate%E2%80%93distortion_theory" target="_blank"><b>rate-distortion theory</b></a>: we want a compressed representation $\tilde{X}$ of a signal $X$ that minimizes the rate $I(X; \tilde{X})$ while keeping the expected distortion $\mathbb{E}[d(x,\tilde{x})]$ small. 
-            The catch is that in rate-distorition theory <i>we</i> need to supply the distortion function $d$, which means we need to choose which differences between the original and reconstructed signal matter. 
+            The catch is that in rate-distortion theory <i>we</i> need to supply the distortion function $d$, which means we need to choose which differences between the original and reconstructed signal matter. 
             For complex signals such as speech, images, or protein sequences, nobody actually knows the "correct" $d$.
         </p>
         <p>
-            The information bottleneck aims to avoid defining this relevance by hand, instead defining it through labels $Y$, which we gather through sampling. Then we can specify our relevant information as <b>mutual information</b> $I(X; Y)$, and say that a good representation is a compressed $\tilde{X}$ which keeps as much of it as possible. 
+            The information bottleneck aims to avoid defining this relevance by hand, instead defining it through labels $Y$, which we gather through sampling. Then we can specify our relevant information as the <b>mutual information</b> $I(X; Y)$, and say that a good representation is a compressed $\tilde{X}$ which keeps as much of it as possible. 
             Formally, we fix the Markov chain $Y \to X \to \tilde{X}$ (where the representation $\tilde{X}$ only sees $X$) and minimize the Lagrangian below:
         </p>
-
-        TODO i was here
 
         <div class="widget" id="ib-eq-widget">
             <div class="widget-title">the IB objective</div>
@@ -294,20 +292,20 @@
         </div>
 
         <p>
-            Setting the variational derivative to zero yields an exact, self-consistent solution:
+            The optimal encoder groups inputs according to what they tell us about $Y$. Inputs with similar conditional distributions $p(y \mid x)$ can share a representation without losing much relevant information. The encoder satisfies:
         </p>
-        <div class="eq" data-tex="p(\tilde{x}\mid x) \;=\; \frac{p(\tilde{x})}{Z(x,\beta)}\,\exp\!\Big(-\beta\, D\big[\,p(y\mid x)\;\|\;p(y\mid \tilde{x})\,\big]\Big),"></div>
+        <div class="eq" data-tex="p(\tilde{x}\mid x) \;=\; \frac{p(\tilde{x})}{Z(x,\beta)}\,\exp\!\Big(-\beta\, D\big[\,p(y\mid x)\;\|\;p(y\mid \tilde{x})\,\big]\Big)"></div>
         <p>
-            together with the consistency conditions <span class="imath" data-tex="p(\tilde{x}) = \sum_x p(x)p(\tilde{x}\mid x)"></span> and <span class="imath" data-tex="p(y\mid\tilde{x}) = \sum_x p(y\mid x)p(x\mid\tilde{x})"></span>. This is a <a href="https://en.wikipedia.org/wiki/Boltzmann_distribution" target="_blank">Boltzmann distribution</a> where the "energy" is a KL divergence between predictive distributions. The original IB paper showed that iterating these three equations in turn provably converges (though not necessarily to the global optimum).
+            together with the consistency conditions <span class="imath" data-tex="p(\tilde{x}) = \sum_x p(x)p(\tilde{x}\mid x)"></span> and <span class="imath" data-tex="p(y\mid\tilde{x}) = \sum_x p(y\mid x)p(x\mid\tilde{x})"></span>. These equations describe a <a href="https://en.wikipedia.org/wiki/Boltzmann_distribution" target="_blank">Boltzmann distribution</a> where the "energy" is a KL divergence between predictive distributions. Tishby et al. show that iterating these three equations in turn provably converges (though not necessarily to the global optimum).
         </p>
 
         <div class="remark">
-            <span class="remark-label">remark (divergence as effective distortion)</span>
-            The divergence $D[p(y|x)\,\|\,p(y|\tilde{x})]$ was <i>not assumed anywhere</i>; it fell out of the <a href="https://en.wikipedia.org/wiki/Variational_principle" target="_blank">variational principle</a> as the effective distortion measure. This is information theory's way of answering: "what should I care about preserving?"
+            <span class="remark-label">remark (effective distortion)</span>
+            The KL divergence here serves as the distortion function that we would normally supply ourselves in rate-distortion theory.
         </div>
 
         <p>
-            As an example, consider the following toy problem. We have $\vert X \vert = 8$ signals, each with its own relevance profile $p(y \mid x)$ over a binary label $Y \in \{0, 1\}$, and a bottleneck of $\vert \tilde{X} \vert = 3$ codewords to compress them into. The signals fall into three natural groups by their $p(y \mid x)$ &mdash; low, medium, and high $p(y=1\mid x)$. Drag $\beta$ to change how hard we push for relevance over compression, and watch the optimal encoder $p(\tilde{x} \mid x)$ reorganize as the solution slides along the <b>information plane</b> $(I(X;\tilde{X}),\, I(\tilde{X};Y))$.
+            As an example, consider the following toy problem. Suppose that we have $\vert X \vert = 8$ signals over a binary label $Y \in \{0, 1\}$, each with a probability $p(y=1 \mid x)$ of belonging to class $1$, and just $\vert \tilde{X} \vert = 3$ codewords to compress them into. Our signals fall into three groups by their $p(1 \mid x)$: low, medium, and high. Adjust $\beta$ to see how the encoder groups the inputs as we  change the balance between compression and relevance, and watch the optimal encoder $p(\tilde{x} \mid x)$ reorganize as the solution slides along the <b>information plane</b> $(I(X;\tilde{X}),\, I(\tilde{X};Y))$.
         </p>
 
         <div class="widget">
@@ -323,42 +321,37 @@
                 <div class="ib-mi-readout" id="ib-mi-readout"></div>
             </div>
             <div class="caption">
-                Top: the information plane; each dot is the converged solution for one $\beta$, bounded above by $I(X;Y)$ by the DPI. Bottom: the learned soft assignment $p(\tilde{x} \mid x)$. At low $\beta$, everything collapses to one codeword (maximal compression, zero relevance); as $\beta$ grows the encoder splits into 2, then 3 clusters. Those splits are second-order phase transitions in $\beta$, referred to as <i>bifurcations</i> in the information plane.
+                Top: each dot shows the representation computed for one value of $\beta$. Its horizontal coordinate measures information retained about $X$, while its vertical coordinate measures information retained about $Y$. The dashed line marks $I(X; Y)$, which (by the DPI) the representation cannot exceed. Bottom: each row gives the probabilities of assigning an input to the three codewords. At small $\beta$, these probabilities are uniform, while as $\beta$ increases, the encoder begins to distinguish the groups.
             </div>
         </div>
 
         <div class="remark">
             <span class="remark-label">remark (bifurcations)</span>
-            The information curve is concave with slope $\delta I(\tilde{X};Y)/\delta I(X;\tilde{X}) = \beta^{-1}$. Annealing $\beta$ from 0 upward traces the curve; the cluster splits ("phase transitions") visible in the heatmap happen at critical $\beta$ values determined by second-order statistics of the joint distribution. This is important: the IB litereature claims that these bifurcations have something to say about network architecture.
+            As $\beta$ increases, a group of inputs can split into separate clusters. These splits are called <i>bifurcations</i>. Along the optimal information curve, our slope is $dI(\tilde{X};Y)/dI(X;\tilde{X}) = \beta^{-1}$, so a larger $\beta$ corresponds to accepting more information about $X$ with progressively smaller gains in information about $Y$. Followup work proposes using these bifurcations to guide the placement of network layers; we return to this idea below.
         </div>
     </div>
 
     <div class="content">
         <h2>Deep learning and the information bottleneck</h2>
         <p>
-            A feedforward network maps inputs $X$ through hidden layers $h_1, \dots, h_m$ to a prediction $\hat{Y}$. Each layer only sees the previous one, so the layers form a Markov chain. By the DPI we get the chain of inequalities:
+            A feedforward network maps inputs $X$ through hidden layers $h_1, \dots, h_m$ to a prediction $\hat{Y}$. As each layer only sees the previous one, the layers form a Markov chain. By the DPI we get the chain of inequalities:
         </p>
             $$I(Y;X) \;\ge\; I(Y;h_1) \;\ge\; \cdots \;\ge\; I(Y;h_m) \;\ge\; I(Y;\hat{Y})$$
-
-        <div class="remark">
-            <span class="remark-label">remark (information loss)</span>
-            Notice that relevant information lost at any layer is gone forever; no amount of downstream "cleverness" recovers it. 
-        </div>
         <p>
-            Under the information bottleneck, we treat each layer $h_i$ as a bottleneck variable, place it on the information plane at coordinates $(I(X;h_i),\, I(Y;h_i))$, and compare the whole network against the optimal IB curve for the data's joint distribution $p(X,Y)$. Supervised learning, in this view, <i>is</i> the IB problem: our goal is to extract an approximate minimal sufficient statistic of $X$ for $Y$.
+            Under the information bottleneck, each hidden layer $h_i$ is a representation of $X$, with coordinates $(I(X; h_i), I(Y; h_i))$ on the information plane. We can compare each layer with the optimal IB curve for $p(X, Y)$ to ask how much information it retains about $Y$ relative to how much it retains about $X$. Our goal here is to extract an approximate <b>minimal sufficient statistic</b> of $X$ for $Y$; in other words, we must preserve the information needed to predict $Y$ while discarding as much irrelevant information about $X$ as possible.
         </p>
         <div class="remark">
             <span class="remark-label">remark (cross-entropy)</span>
-            It turns out that the relevance half $I(Y;Z)$ of the objective is something we already optimize every day. Though relevance cannot be computed directly (it needs the true $p(y \mid z)$), we can lower-bound it by sticking a classifier $q(y \mid z)$ on top of the representation and asking how well it predicts the labels. Maximizing that bound is <i>exactly</i> minimizing the cross-entropy loss. In other words, the "maximize relevance" half of the information bottleneck is just ordinary supervised training in disguise; the only genuinely new ingredient deep IB adds is the compression half, $\beta\, I(X;Z)$, which shows up as a regularizer.
+            It turns out that the relevance half $I(Y;Z)$ of the objective is something we already optimize every day. Though relevance cannot be computed directly (it needs the true $p(y \mid z)$), we can lower-bound it by sticking a classifier $q(y \mid z)$ on top of the representation and asking how well it predicts the labels. Maximizing that bound is <i>exactly</i> minimizing the cross-entropy loss. In other words, the "maximize relevance" bit of the information bottleneck is just ordinary supervised training; an additional compression penalty discourages retaining information about the input.
         </div>
         <p>
-            Why would we <i>want</i> layers to compress (i.e. minimize $I(X;h_i)$), rather than just maximize relevance? The answer lies in generalization: the IB authors show that, by finite-sample bounds, the estimation error of $I(\tilde{X};Y)$ scales at $O(K|\mathcal{Y}|/\sqrt{n})$ where $K \approx 2^{I(X;\tilde{X})}$ is the effective description length of the representation. A layer that hasn't compressed is a layer whose apparent relevance you can't trust, as it may be overfitting. Again, notice this is making a rather bold statement: <i>compression is necessary for generalization</i>.
+            Why would we <i>want</i> layers to compress (i.e. minimize $I(X;h_i)$), rather than just maximize relevance? The answer lies in generalization: the IB authors show that the estimation error of $I(\tilde{X};Y)$ is bounded by a term of order $O(\frac{K|\mathcal{Y}|}{\sqrt{n}})$ where $K \approx 2^{I(X;\tilde{X})}$ is the number of effective representations. With a fixed number of training samples, this bound becomes weaker as the representation retains more information about $X$. Compression therefore helps control how accurately we can estimate relevance from a finite sample.
         </p>
         <p>
-            So what does this predict about training? If each layer is racing toward a minimal sufficient statistic, its position $(I(X;h_i),\, I(Y;h_i))$ on the information plane should not sit still during optimization. Empirical information-plane studies report a surprising two-phase trajectory for stochastic gradient descent: first, a brief <b>fitting</b> phase, where every layer rapidly gains information about both $X$ and $Y$ as the network memorizes the training signal. Then, a much longer <b>compression</b> phase, where the layers slowly shed information about the input ($I(X;h)$) while holding onto relevance ($I(Y;h)$). In this picture, most of training is spent forgetting the irrelevant parts of $X$ rather than fitting the labels.
+            Furthermore, we can examine what happens during training by tracking each layer's position on the information plane throughout a training run. Several empirical studies show that training begins with a (relatively) brief <b>fitting</b> phase, where every layer rapidly gains information about both $X$ and $Y$ as the network learns to predict the labels. Then, networks undergo a much longer <b>compression</b> phase, where the layers slowly shed information about the input ($I(X;h)$) while holding onto relevance ($I(Y;h)$). This two-phase trajectory suggests that most of training is spent forgetting the irrelevant parts of $X$ rather than fitting the labels.
         </p>
         <p>
-            The interactive below illustrates these phases. The black curve is the IB limit; the best relevance achievable by any representation at a given level of compression. Each dot is a hidden layer, linked into the Markov chain $X \to h_1 \to \dots \to \hat{Y}$.
+            The interactive below illustrates these phases. The solid curve is a schematic IB limit, rather than one computed from a particular data distribution.
         </p>
 
         <div class="widget">
@@ -370,59 +363,59 @@
                 <span class="readout" id="dnn-readout"></span>
             </div>
             <div class="caption">
-                This is a qualitative reconstruction of empirical information-plane studies. Notice that the gap between the layers and optimal curve (which the authors call $\Delta G$) is the unrecoverable relevance due to finite samples. Deeper layers compress further (smaller $I(X;h) \implies$ smaller $\beta$) and, by the DPI, sit no higher in $I(Y;h)$.
+                This is a schematic illustration of the fitting and compression phases, not measurements from a trained network. Deeper layers retain less information about $X$ and, by the DPI, cannot retain more information about $Y$ than earlier layers.
             </div>
         </div>
 
         <div class="remark">
             <span class="remark-label">remark (training dynamics)</span>
-            This is <i>not</i> a settled theory; the dynamics-of-training claims remain contested. Two-phase compression was reported empirically in <a href="https://arxiv.org/abs/1703.00810" target="_blank">Schwartz-Ziv & Tishby 2017</a>, but later work (notably <a href="https://arxiv.org/abs/1810.10531" target="_blank">Saxe et al., 2018</a>) showed that the compression phase can depend on the choice of activation function and on how mutual information is estimated/binned in deterministic networks (where $I(X;h)$ is technically infinite or constant unless you add noise or discretize).
+            This is <i>not</i> a settled theory. Two-phase compression was reported empirically in <a href="https://arxiv.org/abs/1703.00810" target="_blank">Schwartz-Ziv & Tishby 2017</a>, but later work (notably <a href="https://www.saxelab.org/assets/papers/Saxe2018.pdf" target="_blank">Saxe et al., 2018</a>) showed that the compression phase can depend on the choice of activation function and on how mutual information is estimated/binned in deterministic networks (where $I(X;h)$ is technically infinite or constant unless you add noise or discretize).
         </div>
 
         <div class="remark">
             <span class="remark-label">remark (model architecture)</span>
-            The 2015 paper also conjectures a correspondence between the IB curve's bifurcations and where layers "should" sit: phase transitions on the curve are governed by second-order correlations of the data, the same structure that breaks linear separability. Since a single sigmoidal neuron can only carve linearly separable regions, optimal layer placements would sit just past the bifurcations. This idea remains contested; for more see <a href="https://www.youtube.com/watch?v=utvIaZ6wYuw&t=1630s&pp=ygUddGlzaGJ5IGluZm9ybWF0aW9uIGJvdHRsZW5lY2s%3D" target="_blank">Tishby's remarks</a>.
+            The 2015 paper also conjectures a correspondence between the IB curve's bifurcations and where layers "should" sit: phase transitions on the curve are governed by second-order correlations of the data (the same structure that breaks linear separability). Since a single sigmoidal neuron can only carve linearly separable regions, optimal layer placements should sit just past these bifurcations. This idea remains contested; for more see <a href="https://www.youtube.com/watch?v=utvIaZ6wYuw&t=1630s&pp=ygUddGlzaGJ5IGluZm9ybWF0aW9uIGJvdHRsZW5lY2s%3D" target="_blank">Tishby's remarks</a>.
         </div>
     </div>
 
     <div class="content">
         <h2>Graph information bottleneck</h2>
         <p>
-            So far, the information bottleneck has assumed that training examples are i.i.d., and that inputs are feature vectors. Graphs break both of these assumptions: input is now $\mathcal{D} = (A, X)$ (adjacency matrix & node features), and the rows of $X$ are correlated through the edges $E$, so we cannot split the data per node. Instead, we operate in a <i>transductive</i> setting, where we effectively observe a single realization of $P(\mathcal{D})$. The graph information bottleneck keeps the objective in a recognizable form
+            So far, the information bottleneck has assumed that training examples are i.i.d., and that inputs are feature vectors. Graphs break both of these assumptions: our input is now $\mathcal{D} = (A, X)$ (an adjacency matrix & matrix of node features), where the rows of $X$ are correlated through the edges $E$, such that we cannot split the data per node. We now operate in a <i>transductive</i> setting, where we effectively observe a single realization of $P(\mathcal{D})$. The graph information bottleneck keeps the objective in a recognizable form
         </p>
             $$\min_{\;\mathbb{P}(Z\,\mid\,\mathcal{D})\,\in\,\Omega}\ \mathrm{GIB}_{\beta}(\mathcal{D}, Y; Z) \;\triangleq\; -I(Y;Z) \;+\; \beta\, I(\mathcal{D};Z)$$
         <p>
-            but searches instead over $\Omega$ (the space of all encoders). GIB deals with two obstacles:
+            where we now use $\Omega$ to denote the space of all encoders. GIB deals with two obstacles:
         </p>
         <ul>
-            <li>First, our data are no longer i.i.d., which breaks most of the fundamental assumptions of information theory. GIB replaces the i.i.d. assumption with a <b>local-dependence assumption</b>: conditioned on its $k$-hop neighborhood, a node is independent of the rest of the graph. This restricts $\Omega$ to encoders that respect local dependence, which take the form of layered Markov chains that alternate between extracting <i>structural</i> information $Z_A^{(l)}$ and <i>feature</i> information $Z_X^{(l)}$.</li>
+            <li>First, our data are no longer i.i.d., which makes estimating the information terms more difficult. GIB replaces the i.i.d. assumption with a <b>local-dependence assumption</b>: conditioned on its $k$-hop neighborhood, a node is independent of the rest of the graph. This restricts $\Omega$ to encoders that respect local dependence, which take the form of layered Markov chains that alternate between extracting <i>structural</i> information $Z_A^{(l)}$ and <i>feature</i> information $Z_X^{(l)}$.</li>
             <li>Second, $A$ is discrete, which throws a wrench in our differentiation plans. To resolve this, the encoder treats attention weights as parameters of a neighbor-sampling distribution (e.g. categorical or Bernoulli), with <a href="https://arxiv.org/abs/1611.01144" target="_blank">Gumbel-softmax reparameterization</a>.</li>
         </ul>
         <p>
-            Now we need to actually compute the objective. Just like in deep learning, the compression term $I(\mathcal{D};Z)$ is intractable, so we replace it with a variational upper bound (an expression we <i>can</i> compute that is guaranteed to be at least as big). The new wrinkle is that our encoder builds $Z$ in two interleaved pieces (structure & features), so the bound splits into two matching pieces. By the DPI we have:
+            Now we need to actually compute the objective. Just like in deep learning, the compression term $I(\mathcal{D};Z)$ is intractable, so we replace it with a variational upper bound (an expression we <i>can</i> compute that is guaranteed to be at least as big). As our encoder builds $Z$ in two interleaved pieces (structure & features), so the bound splits into two matching pieces. By the DPI we have:
         </p>
         $$I(\mathcal{D}; Z^{(L)}_X) \;\le\; \sum_{l \in S_A} \underbrace{\mathbb{E}\!\left[\log\tfrac{\mathbb{P}(Z_A^{(l)} \mid A,\, Z_X^{(l-1)})}{\mathbb{Q}(Z_A^{(l)})}\right]}_{\mathrm{AIB}^{(l)}\;\text{(structure)}} \;+\; \sum_{l \in S_X} \underbrace{\mathbb{E}\!\left[\log\tfrac{\mathbb{P}(Z_X^{(l)} \mid Z_X^{(l-1)},\, Z_A^{(l)})}{\mathbb{Q}(Z_X^{(l)})}\right]}_{\mathrm{XIB}^{(l)}\;\text{(features)}}$$
         <p>
-            Each term is a KL divergence between what the encoder actually does and a deliberately dumb <b>reference distribution</b> $\mathbb{Q}$: for structure (the AIB term), $\mathbb{Q}$ treats every neighbor as equally worth attending to; for features (the XIB term), $\mathbb{Q}$ is a generic blob (a mixture of Gaussians). Measuring against a dumb baseline is what makes these terms <i>penalties</i>: the encoder only pays when it pays attention to specific edges or specific feature directions, so each term taxes the model for using structure or features it didn't strictly need.
+            Each term is a KL divergence between what the encoder actually does and a deliberately dumb <b>reference distribution</b> $\mathbb{Q}$. For structure (the AIB term), $\mathbb{Q}$ treats every neighbor as equally worth attending to; for features (the XIB term), $\mathbb{Q}$ is a generic blob (a mixture of Gaussians). Minimizing these terms encourages the encoder to stay close to the reference distributions, while the relevance term encourages it to preserve information needed to predict $Y$.
         </p>
         <div class="remark">
             <span class="remark-label">remark (implementation)</span>
-            Notice that a GIB model is just a <a href="https://arxiv.org/abs/1710.10903" target="_blank">graph attention network</a> (GAT) trained with the usual cross-entropy loss, plus two regularizers, one taxing edges, one taxing features. The bottleneck manifests entirely in the loss function.
+            Notice that a GIB model is just a <a href="https://arxiv.org/abs/1710.10903" target="_blank">graph attention network</a> (GAT) trained with the usual cross-entropy loss, plus two regularizers, one taxing edges, one taxing features. Thus the primary 'implementation' of the information bottleneck is in the loss function.
         </div>
 
         <div class="remark">
             <span class="remark-label">remark (adversarial attacks)</span>
-            Splitting the penalty into two terms allows us to defend against different kinds of adversarial attacks. Attackers can poison either the <i>edges</i> (adding fake connections) or the <i>features</i> (corrupting node attributes). Against edge-based attacks, the structure penalty does nearly all the work, while against feature noise the feature penalty kicks in. Notice also that, because the network passes messages over a <i>resampled</i> version of the graph rather than the original adjacency matrix, it never fully trusts the raw edges in the first place, allowing for additional robustness.
+            Splitting the penalty into two terms allows us to defend against different kinds of adversarial attacks. Attackers can poison either the <i>edges</i> (adding fake connections) or the <i>features</i> (corrupting node attributes). Against edge-based attacks, the structure penalty does nearly all the heavy lifting, while against feature noise the feature penalty takes over. Notice also that, because the network passes messages over a <i>resampled</i> version of the graph rather than the original adjacency matrix, it never fully trusts the raw edges in the first place, allowing for additional robustness.
         </div>
     </div>
 
     <div class="content">
         <h2>Dynamic graph information bottleneck</h2>
         <p>
-            DGIB extends the GIB to <b>dynamic graphs</b>: a sequence of discrete snapshots $\mathcal{G}^1, \dots, \mathcal{G}^T$ under the link prediction task. A naive adaptation (running GIB per snapshot, aggregating with an RNN, and plugging $\mathcal{D} = (\mathcal{G}^{1:T}, X^{T+1})$ into the IB objective) is insufficient: the training process effectively decomposes into $T{+}1$ per-step Markov chains, and the network lazily satisfies each one; every intermediate $Z^{t+1}$ becomes minimal-and-sufficient <i>for its own next step</i>, while the final $Z^{T+1}$ (the one we actually care about) ends up sub-optimal. Per-step compression doesn't agree on what to keep.
+            DGIB extends the GIB to <b>dynamic graphs</b>, sequences of discrete snapshots $\mathcal{G}^1, \dots, \mathcal{G}^T$, under the link prediction task. As motivation, consider why a naive implementation might be insufficient. Say we ran GIB per snapshot, aggregated with an RNN, and plugged $\mathcal{D} = (\mathcal{G}^{1:T}, X^{T+1})$ into the IB objective. Under this approach, the training process effectively decomposes into $T{+}1$ per-step Markov chains, where every intermediate $Z^{t+1}$ is optimized <i>for its next step</i>, so the final $Z^{T+1}$ (the one we actually care about) is likely to end up sub-optimal. If we want to compress the entire sequence, we need to find a way to coordinate the compressions at each step.
         </p>
         <p>
-            The fix is a third requirement on top of minimal and sufficient: <b>consensus</b>. The compression at every step should preserve the predictive pattern shared across steps. DGIB enforces this by splitting the objective into two cooperating channels:
+            To do this, we can introduce a third requirement on top of minimal and sufficient: <b>consensus</b>. We want compression at every step to preserve a predictive pattern shared across steps. DGIB enforces this by splitting the objective into two channels:
         </p>
 
         <div class="widget" id="dgib-eq-widget">
@@ -436,16 +429,16 @@
         </div>
 
         <p>
-            Making this trainable reuses GIB's playbook, just stretched along the time axis. Each of the three pieces gets handled the same way as before:
+            Each of the three pieces gets handled the same way as before:
         </p>
         <ul>
-            <li><b>Relevance</b> ($I(Y^{T+1};Z^{T+1})$) is still intractable, so we still slap a classifier $Q(Y \mid Z)$ on top; the bound collapses to ordinary cross-entropy loss.</li>
-            <li><b>Compression</b> ($I(\mathcal{D};Z^{T+1})$): GIB's local-dependence assumption now extends across time, so a node depends only on its $k$-hop neighbors in the current and previous snapshot. That Markov structure lets us split the bound into per-snapshot pieces, summed over time: a structure penalty for the sampled edges $\hat{A}^t$ and a feature penalty for the features $Z^t$. These are exactly the two penalties from the graph section, now once per snapshot.</li>
-            <li><b>Consensus</b> ($I(Z^{1:T};Z^{T+1})$) gets the same kind of variational upper bound as the compression term, but measured against the earlier representations instead of the raw input, penalizing the final representation for disagreeing with the ones before it.</li>
+            <li><b>Relevance</b> ($I(Y^{T+1};Z^{T+1})$) is still intractable, so we still slap a classifier $Q(Y \mid Z)$ on top; in practice, this is trained with standard cross-entropy.</li>
+            <li><b>Compression</b> ($I(\mathcal{D};Z^{T+1})$): as GIB's local-dependence assumption now extends across time, a node depends only on its $k$-hop neighbors in the current and previous snapshot. This lets us split the bound into per-snapshot pieces, summed over time: a structure penalty for the sampled edges $\hat{A}^t$ and a feature penalty for the features $Z^t$. These are exactly the two penalties from the graph section.</li>
+            <li><b>Consensus</b> ($I(Z^{1:T};Z^{T+1})$) gets the same kind of variational upper bound as the compression term, but measured against the earlier representations instead of the raw input. This limits how much information the final representation retains about earlier representations while preserving information about the future label.</li>
         </ul>
 
         <p>
-            The schematic below shows the whole pipeline. We have three snapshots $\mathcal{G}^1, \mathcal{G}^2, \mathcal{G}^3$ of a graph with two communities, which the model processes left to right into a final prediction. The graph has been contaminated: the red edges have been injected by attackers, and the speckled nodes show corrupted features. The three checkboxes turn each compression term on or off; toggle them and watch which noise survives to the prediction.
+            The toy example below illustrates the roles of the three compression terms. Suppose we have three snapshots $\mathcal{G}^1, \mathcal{G}^2, \mathcal{G}^3$ of a graph with two communities, which the model processes left to right into a final prediction. But, suppose the graph has been contaminated: new (red) edges have been injected by attackers, and the node features have been corrupted (visualized here as color variation). The three checkboxes turn each compression term on or off; toggle them to their illustrated effects on the graph and prediction.
         </p>
 
         <div class="widget">
@@ -458,23 +451,23 @@
             </div>
             <div class="status" id="dgib-status"></div>
             <div class="caption">
-                Thick edges are the persistent two-community pattern (the real signal); thin gray edges are throwaway per-snapshot noise; red edges are the adversarial attack.
+                This is a qualitative illustration. Thick edges represent the real signal; thin gray edges are per-snapshot noise; red edges represent an adversarial injection attack; color variation represents corrupted features.
             </div>
         </div>
 
         <div class="remark">
             <span class="remark-label">remark (robustness)</span>
-            The same $\beta$ trade-off is still here at the end of the chain. DGIB's experiments show that dialing down the compression (larger $1/\beta_1, 1/\beta_2$) steadily improves accuracy on clean data but steadily hurts robustness under attack.
+            DGIB's experiments show that dialing down the compression (larger $1/\beta_1, 1/\beta_2$) improves accuracy on clean data but hurts robustness under attack.
         </div>
     </div>
 
     <div class="content">
         <h2>Closing thoughts</h2>
         <p>
-            The information bottleneck is a playbook: pick a relevance variable, write down $\min\, I(\text{input};\,\text{representation}) - \beta\, I(\text{representation};\,\text{relevance})$, and then fight for tractability. Each paper just picks its fight in a different setting. The original IB could afford to be exact, solving the objective directly with a convergent set of self-consistent equations. Deep learning gave that up for variational bounds, which turn the relevance term into cross-entropy and the compression term into a divergence penalty. Graphs added the wrinkle that data points are no longer independent, so i.i.d. is swapped for local dependence and the compression penalty splits along structure and features. Dynamic graphs stretch that across time and add a consensus term so the snapshots don't each compress toward their own private solution.
+            We began with the idea that an efficient representation of data leverages an understanding of the process that generated it. The information bottleneck gives us a way to make part of that idea precise: given something we want to predict, how much of the input can we discard without losing our ability to predict it?. The papers we have walked through explore this question in increasingly complicated settings, from clustering inputs to learning representations of dynamic graphs. They also suggest why discarding information can help: details that distinguish training examples may be unnecessary for prediction, or make a model more sensitive to corrupted inputs.
         </p>
         <p>
-            But throughout all this, one idea keeps recurring: intelligence is a trade-off between compression and relevance.
+            So, what does this tell us about the connection between compression and intelligence? To discard irrelevant details while preserving the information that matters, a model must identify structure that supports prediction beyond the examples it has seen. In this sense, a useful compression reflects something that the model has learned about how its data works.
         </p>
     </div>
 
@@ -1227,12 +1220,13 @@
             readout.textContent = '(' + betas[idx].toFixed(2) + ')';
 
             miReadout.innerHTML =
-                'I(X;X\u0303) = ' + fmtI(sol.Ix) + '<br>' +
-                'I(X\u0303;Y) = ' + fmtI(sol.Iy);
+                katex.renderToString('I(X;\\tilde{X}) = ' + fmtI(sol.Ix), { throwOnError: false }) + '<br>' +
+                katex.renderToString('I(\\tilde{X};Y) = ' + fmtI(sol.Iy), { throwOnError: false });
 
             // heatmap table
             let html = '<table class="hm"><tr><td class="hdr"></td>';
-            for (let t = 0; t < NT; t++) html += '<td class="hdr">x\u0303' + (t + 1) + '</td>';
+            for (let t = 0; t < NT; t++) html += '<td class="hdr">' +
+                katex.renderToString('\\tilde{x}_{' + (t + 1) + '}', { throwOnError: false }) + '</td>';
             html += '<td class="hdr" style="padding-left:10px;">p(y=1|x)</td></tr>';
             for (let x = 0; x < NX; x++) {
                 html += '<tr><td class="hdr">x' + (x + 1) + '</td>';
@@ -1259,9 +1253,9 @@
         const slider = document.getElementById('dnn-epoch');
         const readout = document.getElementById('dnn-readout');
 
-        // stylized IB limit curve: Iy = IXY * (1 - exp(-k Ix))
+        // Schematic limit, constrained by DPI: Iy <= Ix and Iy <= IXY.
         const IXY = 1.0, k = 3.0, maxIx = 4.0;
-        const limit = ix => IXY * (1 - Math.exp(-k * Math.max(0, ix)));
+        const limit = ix => Math.min(Math.max(0, ix), IXY * (1 - Math.exp(-k * Math.max(0, ix))));
 
         const layers = [
             { s: [3.6, 0.07], p: [3.9, 0.95],  e: [3.30, 0.965] }, // h1
@@ -1504,19 +1498,12 @@
             drawPredPanel(ox, mT, pw, ph, opts);
 
             // status text
-            const a = cbA.checked, x = cbX.checked, c = cbC.checked;
-            let msg;
-            if (!a && !x && !c) {
-                msg = 'Nothing on: the representation keeps everything, attack edges and feature noise included. Maximally expressive, maximally brittle.';
-            } else if (a && x && c) {
-                msg = 'Everything on: edge noise and feature noise are both dropped, and consensus keeps the shared cross-snapshot pattern.';
-            } else if (a && x && !c) {
-                msg = 'Compressing but not agreeing: each snapshot is tidied up on its own, but nothing forces them to agree, so the prediction just latches onto the last one.';
-            } else if (!a && !x && c) {
-                msg = 'Agreeing but not compressing: the snapshots settle on a shared pattern, but the noise is never removed, so it can still be exploited.';
-            } else {
-                msg = 'Partial compression: some noise still gets through. Each term defends a different attack surface, so leaving one off leaves a gap that can be exploited.';
-            }
+            const enabled = [cbA, cbX, cbC].filter(cb => cb.checked).length;
+            const msg = enabled === 3
+                ? 'All three terms on: noise is suppressed, and we preserve the real signal.'
+                : enabled === 0
+                    ? 'All three terms off: adversarial and per-snapshot noise is preserved and corrupts our final model.'
+                    : 'Some terms off: some noise is suppressed, but the real signal remains corrupted.';
             status.textContent = msg;
         }
 
@@ -1540,16 +1527,16 @@
     }
 
     const ibTexts = {
-        L: '<b>Functional</b> minimized over all stochastic encoders $p(\\tilde{x}\\mid x)$. Note the optimization variable is a conditional <i>distribution</i>, not a deterministic map.',
-        comp: '<b>Compression:</b> the number of bits the representation keeps about the raw signal; the minimal codebook rate. Minimizing this pushes toward forgetting.',
-        beta: '<b>The tradeoff parameter:</b> a Lagrange multiplier trading compression against relevance. As $\\beta \\to 0$, everything maps to a single codeword. As $\\beta \\to \\infty$, we get arbitrarily fine quantization with no compression. $\\beta$ is also the inverse slope of the optimal information curve.',
-        rel: '<b>Relevance:</b> how much the representation still says about $Y$. Maximizing this pushes toward remembering.'
+        L: 'The objective (loss) we are minimizing by choosing an optimal encoder $p(\\tilde{x}\\mid x)$, which assigns each input $x$ a probability distribution over representations $\\tilde{x}$.',
+        comp: 'The compression term, which specifies how much information the representation retains about $X$.',
+        beta: 'A Lagrange multiplier balancing compression against relevance. Smaller $\\beta$ values push toward higher compression, while larger $\\beta$ values push toward higher relevance.',
+        rel: 'The relevance term, which specifies how much information the representation retains about $Y$.'
     };
 
     const dgibTexts = {
-        total: '<b>The full objective:</b> a weighted sum of two channels, with $\\alpha$ setting the balance. Both have the usual IB shape (relevance minus $\\beta$ times compression); they just compress against different things.',
-        ms: '<b>The minimal-sufficient channel</b>: stay predictive of the future label $Y^{T+1}$ while compressing away everything else in the whole history $\\mathcal{D}$. This is the same "minimal sufficient statistic" goal as before, now stretched across snapshots.',
-        c: '<b>The consensual channel</b>: instead of compressing against the raw input, compress the final representation $Z^{T+1}$ against the earlier ones $Z^{1:T}$, forcing every time step to agree on one shared pattern. Without this, each step quietly optimizes for itself and the final representation comes out worse.'
+        total: 'The objective we minimize, combining the minimal-sufficient and consensual channels. $\\alpha$ balances these two channels.',
+        ms: 'The minimal-sufficient channel encourages the final representation $Z^{T+1}$ to retain information about the future label $Y^{T+1}$ while limiting how much information it retains about the input $\\mathcal{D}$. $\\beta_1$ balances these two goals, as we have seen before.',
+        c: 'The consensual channel encourages the final representation $Z^{T+1}$ to retain information about $Y^{T+1}$ while limiting how much information it retains about the earlier representations $Z^{1:T}$. $\\beta_2$ balances these two goals.'
     };
 
     window.addEventListener('load', () => {
