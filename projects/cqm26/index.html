@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="The Cure and the Cause: Universal Function Approximation and the Curse of Dimensionality. Williams College Mathematics Colloquium, November 11, 2026.">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/css/stylesheet.css">
+    <title>The Cure and the Cause | Charlie Tharas</title>
+    <style>
+        body { visibility: visible; }
+        .talk-heading { text-align: center; }
+        .talk-heading h1 { margin-bottom: .4em; }
+        .talk-heading p { line-height: 1.5; }
+        .presentation {
+            width: calc(100% - 48px);
+            max-width: 1080px;
+            margin: 10px auto 24px;
+            border: 1px solid var(--borderblack);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .deck-toolbar {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--offoffblack);
+        }
+        .deck-modes { display: flex; gap: 4px; }
+        .deck-toolbar button {
+            font: inherit;
+            color: inherit;
+            background: transparent;
+            border: 1px solid var(--buttonhover);
+            border-radius: 4px;
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+        .deck-toolbar button:hover,
+        .deck-toolbar button[aria-pressed="true"] { background: var(--borderblack); }
+        .deck-toolbar button[aria-pressed="true"] { border-color: currentColor; }
+        .deck-toolbar button:focus-visible,
+        .deck-toolbar a:focus-visible { outline: 2px solid dodgerblue; outline-offset: 3px; }
+        .deck-actions { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+        .deck-screen { aspect-ratio: 16 / 9; background: #000; }
+        .deck-screen iframe { display: block; width: 100%; height: 100%; border: 0; }
+        .presentation:fullscreen {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: none;
+            height: 100%;
+            margin: 0;
+            border: 0;
+            border-radius: 0;
+            background: #000;
+            color: #fff;
+        }
+        .presentation:fullscreen .deck-screen { flex: 1; min-height: 0; aspect-ratio: auto; }
+        .presentation:fullscreen .deck-toolbar { background: var(--offoffblack); }
+        .light-mode .presentation { border-color: var(--borderwhite); }
+        .light-mode .deck-toolbar { background: var(--offoffwhite); }
+        .light-mode .deck-toolbar button { border-color: var(--buttonwhite); }
+        .light-mode .deck-toolbar button:hover,
+        .light-mode .deck-toolbar button[aria-pressed="true"] { background: var(--hoverwhite); }
+        .light-mode .deck-toolbar button[aria-pressed="true"] { border-color: currentColor; }
+        .light-mode .presentation:fullscreen .deck-toolbar button { color: #fff; }
+        .light-mode .presentation:fullscreen .deck-toolbar button:hover,
+        .light-mode .presentation:fullscreen .deck-toolbar button[aria-pressed="true"] { background: var(--borderblack); }
+        .light-mode .presentation:fullscreen a { color: #fff; }
+        .talk-links { display: flex; flex-direction: column; gap: 12px; margin-top: 0; }
+        #viewer-status:empty { display: none; }
+        @media (max-width: 768px) {
+            .presentation { width: 100%; }
+            .deck-toolbar { gap: 8px; padding: 8px; font-size: .9em; }
+            .deck-actions { gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <nav aria-label="Main navigation"></nav>
+    <header class="content talk-heading">
+        <h1>The Cure and the Cause</h1>
+    </header>
+
+    <section class="presentation" id="presentation" aria-label="Presentation slides">
+        <div class="deck-toolbar">
+            <div class="deck-modes" role="group" aria-label="Presentation mode">
+                <button type="button" data-mode="video" aria-pressed="true" aria-controls="deck">Video</button>
+                <button type="button" data-mode="pictures" aria-pressed="false" aria-controls="deck">Pictures</button>
+            </div>
+            <div class="deck-actions">
+                <button type="button" id="fullscreen">[F]ullscreen</button>
+            </div>
+        </div>
+        <div class="deck-screen">
+            <iframe id="deck" src="https://charliemax.dev/mathcqm/" title="Colloquium presentation — video mode" allow="fullscreen; autoplay" allowfullscreen></iframe>
+        </div>
+    </section>
+
+    <main class="content">
+        <p class="talk-links">
+            <a class="blue" href="/files/colloquium2026.pdf" target="_blank" rel="noopener">Read the writeup (PDF)</a>
+            <a class="blue" href="https://github.com/charlietharas/mathcqm" target="_blank" rel="noopener">Source code</a>
+        </p>
+        <p id="viewer-status" role="status"></p>
+        <section class="sources" aria-labelledby="sources-heading">
+            <h2 id="sources-heading">Sources</h2>
+            <h3>Proof and background</h3>
+            <ul>
+                <li>Danica J. Sutherland (2026). <a class="blue" href="https://www.cs.ubc.ca/~dsuth/532D/26w1/notes/html/chap_universal.html">Universal Approximation</a>, <i>Statistical Learning Theory</i>, CPSC 532D.</li>
+                <li>Matus Telgarsky (2021). <a class="blue" href="https://mjt.cs.illinois.edu/dlt/">Deep learning theory lecture notes</a>, §2.</li>
+            </ul>
+            <h3>Quotes and historical references</h3>
+            <ul>
+                <li>Mason, Stewart, and Gill (1958). <a class="blue" href="https://www.newyorker.com/magazine/1958/12/06/rival-2">Rival</a>. <i>The New Yorker.</i></li>
+                <li>Seymour Papert (1966). <a class="blue" href="https://hdl.handle.net/1721.1/6125">The Summer Vision Project</a>. MIT AI Memo 100.</li>
+                <li>Marvin Minsky and Seymour Papert (1969). <a class="blue" href="https://en.wikipedia.org/wiki/Perceptrons_%28book%29">Perceptrons: An Introduction to Computational Geometry</a>.</li>
+                <li>James Lighthill (1973). <a class="blue" href="https://rodsmith.nz/wp-content/uploads/Lighthill_1973_Report.pdf">Artificial Intelligence: A General Survey</a>.</li>
+                <li>David E. Rumelhart, Geoffrey E. Hinton, and Ronald J. Williams (1986). <a class="blue" href="https://doi.org/10.1038/323533a0">Learning representations by back-propagating errors</a>. <i>Nature.</i></li>
+                <li>George Cybenko (1989). <a class="blue" href="https://doi.org/10.1007/BF02551274">Approximation by Superpositions of a Sigmoidal Function</a>. <i>Mathematics of Control, Signals, and Systems.</i></li>
+                <li>Hermann Weyl (1952). <a class="blue" href="https://www.nku.edu/~longa/classes/mat115/days/resources/docs/Symmetry.pdf">Symmetry</a>.</li>
+                <li>Richard S. Sutton (2019). <a class="blue" href="http://www.incompleteideas.net/IncIdeas/BitterLesson.html">The Bitter Lesson</a>.</li>
+                <li>Augustin-Louis Cauchy (1847). <a class="blue" href="https://cs.uwaterloo.ca/~y328yu/classics/cauchy-en.pdf">Méthode générale pour la résolution des systèmes d’équations simultanées</a>.</li>
+            </ul>
+            <h3>Images</h3>
+            <ul>
+                <li>Frank Rosenblatt photograph: Cornell Division of Rare and Manuscript Collections, via <a class="blue" href="https://news.cornell.edu/stories/2019/09/professors-perceptron-paved-way-ai-60-years-too-soon">Cornell Chronicle</a>.</li>
+                <li><i>Perceptrons</i> cover: <a class="blue" href="https://en.wikipedia.org/wiki/Perceptrons_%28book%29">Perceptrons (book)</a>.</li>
+                <li>Summer Vision Project scan: <a class="blue" href="https://hdl.handle.net/1721.1/6125">MIT Libraries</a>.</li>
+                <li>Richard Sutton portrait: Numenta (2021), via <a class="blue" href="https://commons.wikimedia.org/wiki/File:Richard_Sutton_2021_(cropped).jpg">Wikimedia Commons</a>. <a class="blue" href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>; cropped.</li>
+                <li>Hermann Weyl portrait: Studio of Fr. Schmelhaus, Smithsonian Institution Libraries, via <a class="blue" href="https://commons.wikimedia.org/wiki/File:Portrait_of_Hermann_Weyl_(1885-1955),_Mathematician_(2553692300).jpg">Wikimedia Commons</a>.</li>
+            </ul>
+            <h3>Other references and inspiration</h3>
+            <ul>
+                <li>Bronstein et al. <a class="blue" href="https://geometricdeeplearning.com/">Geometric Deep Learning</a>.</li>
+                <li>Welch Labs. <a class="blue" href="https://www.youtube.com/watch?v=qx7hirqgfuU">Why Deep Learning Works Unreasonably Well</a>.</li>
+                <li>Yann LeCun et al. (1989). <a class="blue" href="https://papers.nips.cc/paper_files/paper/1989/hash/53c3bce66e43be4f209556518c2fcb54-Abstract.html">Handwritten Digit Recognition with a Back-Propagation Network</a>.</li>
+                <li>Alan M. Turing (1950). <a class="blue" href="https://doi.org/10.1093/mind/LIX.236.433">Computing Machinery and Intelligence</a>.</li>
+                <li>Samuel Butler (1872). <a class="blue" href="https://www.gutenberg.org/files/1906/1906-h/1906-h.htm">Erewhon</a>, “The Book of the Machines.”</li>
+            </ul>
+        </section>
+    </main>
+    <script src="/js/lightmode.js"></script>
+    <script>
+        const presentation = document.getElementById('presentation');
+        const deck = document.getElementById('deck');
+        const fullscreen = document.getElementById('fullscreen');
+        const status = document.getElementById('viewer-status');
+        const modes = {
+            video: { url: 'https://charliemax.dev/mathcqm/', label: 'video' },
+            pictures: { url: 'https://charliemax.dev/mathcqm/img/', label: 'picture' }
+        };
+        document.querySelectorAll('[data-mode]').forEach(button => {
+            button.addEventListener('click', () => {
+                if (button.getAttribute('aria-pressed') === 'true') return;
+                const mode = modes[button.dataset.mode];
+                deck.src = mode.url;
+                deck.title = `Colloquium presentation — ${mode.label} mode`;
+                document.querySelectorAll('[data-mode]').forEach(item => {
+                    item.setAttribute('aria-pressed', String(item === button));
+                });
+            });
+        });
+        if (!presentation.requestFullscreen || !document.fullscreenEnabled) fullscreen.hidden = true;
+        fullscreen.addEventListener('click', async () => {
+            try {
+                if (document.fullscreenElement) await document.exitFullscreen();
+                else await presentation.requestFullscreen();
+                status.textContent = '';
+            } catch {
+                status.textContent = 'Fullscreen is unavailable in this browser.';
+            }
+        });
+        document.addEventListener('fullscreenchange', () => {
+            fullscreen.textContent = document.fullscreenElement ? 'Exit [F]ullscreen' : '[F]ullscreen';
+        });
+    </script>
+</body>
+</html>
